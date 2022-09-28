@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ndarray = { version = "0.15.0", features = ["rayon"] }
-num-complex = "0.4.2"
+#ndarray = { version = "0.15.0", features = ["rayon"] }
 #ndarray-linalg
+num-complex = "0.4.2"
 
 [dev-dependencies]
 pretty_assertions = "1.0.0"
