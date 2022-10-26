@@ -4,6 +4,7 @@ use std::fmt;
 
 pub mod single_qubit_gate;
 pub mod two_qubit_gate;
+pub mod random_circuit;
 
 pub use single_qubit_gate::*;
 pub use two_qubit_gate::*;
