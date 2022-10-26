@@ -3,7 +3,7 @@ use num_complex::Complex32;
 pub mod consts;
 mod ops;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct TwoQubitGate(pub [[Complex32; 4]; 4]);
 
 pub const CNOT: TwoQubitGate = TwoQubitGate([

@@ -68,3 +68,24 @@ impl std::ops::Mul<Complex32> for TwoQubitGate {
         Self(result)
     }
 }
+
+impl std::fmt::Display for TwoQubitGate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for row in self.0.iter() {
+            let mut value_iter = row.iter();
+            let value = value_iter.next().unwrap();
+            write!(f, "{:.4}{:+.4}i", value.re, value.im)?;
+            for value in value_iter {
+                write!(f, "\t{:.4}{:+.4}i", value.re, value.im)?;
+            }
+            writeln!(f, "")?;
+        }
+        Ok(())
+    }
+}
+
+impl std::fmt::Debug for TwoQubitGate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
+}

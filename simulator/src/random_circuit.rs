@@ -6,17 +6,46 @@ mod rand;
 
 use super::single_qubit_gate::consts::arbitrary_unitary_matrix;
 use super::{SingleQubitGate, TwoQubitGate};
+use block::Block;
 use rand::{Rand, K};
 
 pub struct RandomCircuitIter {
-    n_qubits: usize,
+    n_qubits: u64,
     rand: Rand,
 }
 
 impl RandomCircuitIter {
-    pub fn new(seed: u64, n_qubits: usize) -> Self {
+    pub fn new(seed: u64, n_qubits: u64) -> Self {
         let rand = Rand::new(seed);
         Self { rand, n_qubits }
+    }
+}
+
+impl Iterator for RandomCircuitIter {
+    type Item = Block;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let parity = self.rand.next().unwrap();
+        if parity % 2 == 1 {
+            let gate = random_2x2_unitary(&mut self.rand);
+            let qubit_idx = self.rand.next().unwrap() % self.n_qubits;
+            Some(Block::SingleQubitGate { gate, qubit_idx })
+        } else {
+            let gate = random_4x4_unitary(&mut self.rand);
+
+            let control_qubit_idx = self.rand.next().unwrap() % self.n_qubits;
+            let mut target_qubit_idx = self.rand.next().unwrap() % self.n_qubits;
+
+            while target_qubit_idx == control_qubit_idx {
+                target_qubit_idx = self.rand.next().unwrap() % self.n_qubits;
+            }
+
+            Some(Block::TwoQubitGate {
+                gate,
+                control_qubit_idx,
+                target_qubit_idx,
+            })
+        }
     }
 }
 
