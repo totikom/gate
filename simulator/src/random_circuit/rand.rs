@@ -1,6 +1,6 @@
 const A: u64 = 1_103_515_245;
 const B: u64 = 12_345;
-const K: u64 = 32_767;
+pub const K: u64 = 32_767;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Rand {
@@ -21,4 +21,3 @@ impl Iterator for Rand {
         Some(self.next)
     }
 }
-

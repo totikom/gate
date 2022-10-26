@@ -1,63 +1,36 @@
-use num_complex::{Complex32};
-use std::f32::consts::FRAC_1_SQRT_2;
+use num_complex::Complex32;
+
+pub mod consts;
+mod ops;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SingleQubitGate(pub [[Complex32; 2]; 2]);
 
-pub const X: SingleQubitGate = SingleQubitGate([
-    [Complex32::new(0.0, 0.0), Complex32::new(1.0, 0.0)],
-    [Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)],
-]);
+impl SingleQubitGate {
+    pub fn distanse(&self, rhs: &Self) -> f32 {
+        let mut sum = 0.0;
 
-pub const Y: SingleQubitGate = SingleQubitGate([
-    [Complex32::new(0.0, 0.0), Complex32::new(0.0, -1.0)],
-    [Complex32::new(0.0, 1.0), Complex32::new(0.0, 0.0)],
-]);
-
-pub const Z: SingleQubitGate = SingleQubitGate([
-    [Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)],
-    [Complex32::new(0.0, 0.0), Complex32::new(-1.0, 0.0)],
-]);
-
-pub const T: SingleQubitGate = SingleQubitGate([
-    [Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)],
-    [
-        Complex32::new(0.0, 0.0),
-        Complex32::new(FRAC_1_SQRT_2, FRAC_1_SQRT_2),
-    ],
-]);
-
-pub const H: SingleQubitGate = SingleQubitGate([
-    [
-        Complex32::new(FRAC_1_SQRT_2, 0.0),
-        Complex32::new(FRAC_1_SQRT_2, 0.0),
-    ],
-    [
-        Complex32::new(FRAC_1_SQRT_2, 0.0),
-        Complex32::new(-FRAC_1_SQRT_2, 0.0),
-    ],
-]);
-
-pub fn r_x(theta: f32) -> SingleQubitGate {
-    let arg = theta / 2.0;
-    SingleQubitGate([
-        [Complex32::new(arg.cos(), 0.0), Complex32::new(0.0, -arg.sin())],
-        [Complex32::new(0.0, arg.sin()), Complex32::new(arg.cos(), 0.0)],
-    ])
+        for i in 0..2 {
+            for j in 0..2 {
+                sum += (self.0[i][j] - rhs.0[i][j]).norm_sqr();
+            }
+        }
+        sum.sqrt()
+    }
 }
 
-pub fn r_y(theta: f32) -> SingleQubitGate {
-    let arg = theta / 2.0;
-    SingleQubitGate([
-        [Complex32::new(arg.cos(), 0.0), Complex32::new(-arg.sin(), 0.0)],
-        [Complex32::new(arg.sin(), 0.0), Complex32::new(arg.cos(), 0.0)],
-    ])
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use consts::*;
+    use pretty_assertions::assert_eq;
 
-pub fn r_z(theta: f32) -> SingleQubitGate {
-    let arg = theta / 2.0;
-    SingleQubitGate([
-        [Complex32::new(arg.cos(), -arg.sin()), Complex32::new(0.0, 0.0)],
-        [Complex32::new(0.0, 0.0), Complex32::new(arg.cos(), arg.sin())],
-    ])
+    #[test]
+    fn involution() {
+        assert_eq!(X * X, I);
+        assert_eq!(Y * Y, I);
+        assert_eq!(Z * Z, I);
+        dbg!(I - H * H);
+        assert!(I.distanse(&(H * H)) < 1e-4);
+    }
 }

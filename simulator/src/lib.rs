@@ -2,11 +2,11 @@
 use num_complex::Complex32;
 use std::fmt;
 
+pub mod random_circuit;
 pub mod single_qubit_gate;
 pub mod two_qubit_gate;
-pub mod random_circuit;
 
-pub use single_qubit_gate::*;
+pub use single_qubit_gate::SingleQubitGate;
 pub use two_qubit_gate::*;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -75,7 +75,8 @@ impl fmt::Display for State {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::f32::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_8, PI, SQRT_2};
+    use crate::single_qubit_gate::consts::*;
+    use std::f32::consts::{FRAC_PI_3, PI, SQRT_2};
 
     mod single_qubit_gate {
         use super::*;
@@ -391,7 +392,8 @@ mod tests {
         }
 
         #[test]
-        fn test_suren_gate() {
+        #[ignore]
+        fn test_suren_circuit() {
             let state = State(vec![
                 Complex32::new(1.0, 0.0),
                 Complex32::new(0.0, 0.0),
