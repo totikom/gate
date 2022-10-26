@@ -81,7 +81,7 @@ mod tests {
         use pretty_assertions::assert_eq;
 
         #[test]
-        fn single_qubit() {
+        fn single_qubit_x() {
             let qubit = State(vec![Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)]);
 
             let result = qubit.apply_single_qubit_gate(0, &X);
@@ -92,7 +92,7 @@ mod tests {
         }
 
         #[test]
-        fn two_qubits() {
+        fn two_qubits_x() {
             let state = State(vec![
                 Complex32::new(1.0, 0.0),
                 Complex32::new(0.0, 0.0),
@@ -124,7 +124,7 @@ mod tests {
         }
 
         #[test]
-        fn three_qubits() {
+        fn three_qubits_x() {
             let state = State(vec![
                 Complex32::new(1.0, 0.0),
                 Complex32::new(0.0, 0.0),
@@ -181,6 +181,56 @@ mod tests {
 
             assert_eq!(result, expected_state);
         }
+        #[test]
+        fn single_qubit_z() {
+            let qubit = State(vec![Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)]);
+
+            let result = qubit.apply_single_qubit_gate(0, &Z);
+
+            let expected_qubit = State(vec![Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)]);
+
+            assert_eq!(result, expected_qubit);
+
+            let qubit = State(vec![Complex32::new(0.0, 0.0), Complex32::new(1.0, 0.0)]);
+
+            let result = qubit.apply_single_qubit_gate(0, &Z);
+
+            let expected_qubit = State(vec![Complex32::new(0.0, 0.0), Complex32::new(-1.0, 0.0)]);
+
+            assert_eq!(result, expected_qubit);
+        }
+
+        #[test]
+        fn two_qubits_z() {
+            let state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            let result = state.apply_single_qubit_gate(1, &Z);
+
+            let expected_state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
+
+            let result = state.apply_single_qubit_gate(0, &Z);
+
+            let expected_state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(-1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
+        }
     }
 
     mod two_qubit_gate {
@@ -188,7 +238,7 @@ mod tests {
         use pretty_assertions::assert_eq;
 
         #[test]
-        fn two_qubits() {
+        fn cnot() {
             let state = State(vec![
                 Complex32::new(1.0, 0.0),
                 Complex32::new(0.0, 0.0),
@@ -239,6 +289,101 @@ mod tests {
                 Complex32::new(0.0, 0.0),
                 Complex32::new(0.0, 0.0),
                 Complex32::new(1.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
+
+            let state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+            ]);
+
+            let result = state.apply_two_qubit_gate(0, 1, &CNOT);
+
+            let expected_state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
+        }
+
+        #[test]
+        fn suren() {
+            let state = State(vec![
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            let suren_gate = suren_gate(0.0, 1.0, 2.0, 3.0);
+
+            let result = state.apply_two_qubit_gate(0, 1, &suren_gate);
+
+            let expected_state = State(vec![
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
+
+            let state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            let result = state.apply_two_qubit_gate(0, 1, &suren_gate);
+
+            let expected_state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0_f32.cos(), 1.0_f32.sin()),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
+
+            let state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            let result = state.apply_two_qubit_gate(0, 1, &suren_gate);
+
+            let expected_state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(2.0_f32.cos(), 2.0_f32.sin()),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
+
+            let state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+            ]);
+
+            let result = state.apply_two_qubit_gate(0, 1, &suren_gate);
+
+            let expected_state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(3.0_f32.cos(), 3.0_f32.sin()),
             ]);
 
             assert_eq!(result, expected_state);
