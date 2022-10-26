@@ -3,7 +3,7 @@ use num_complex::Complex32;
 pub mod consts;
 mod ops;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SingleQubitGate(pub [[Complex32; 2]; 2]);
 
 impl SingleQubitGate {

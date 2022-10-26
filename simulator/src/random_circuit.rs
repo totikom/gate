@@ -1,6 +1,7 @@
 use num_complex::Complex32;
 use std::f32::consts::TAU;
 
+mod block;
 mod rand;
 
 use super::single_qubit_gate::consts::arbitrary_unitary_matrix;
