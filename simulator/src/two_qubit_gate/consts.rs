@@ -1,7 +1,6 @@
-use num_complex::{Complex32};
+use num_complex::Complex32;
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct TwoQubitGate(pub [[Complex32; 4]; 4]);
+use super::TwoQubitGate;
 
 pub const CNOT: TwoQubitGate = TwoQubitGate([
     [
