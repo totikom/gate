@@ -17,6 +17,10 @@ impl SingleQubitGate {
         }
         sum.sqrt()
     }
+
+    pub fn determinant(&self) -> Complex32 {
+        self.0[0][0] * self.0[1][1] - self.0[0][1] * self.0[1][0]
+    }
 }
 
 #[cfg(test)]

@@ -164,4 +164,20 @@ mod tests {
 
         assert_eq!(construct_type_2_matrix(&X), expected_gate);
     }
+
+    #[test]
+    fn unitary_2x2() {
+        let mut rand = Rand::new(0);
+        for _ in 0..10 {
+            assert!((random_2x2_unitary(&mut rand).determinant().norm() -1.0).abs() < 1e-4);
+        }
+    }
+
+    #[test]
+    fn unitary_4x4() {
+        let mut rand = Rand::new(0);
+        for _ in 0..10 {
+            assert!((random_4x4_unitary(&mut rand).determinant().norm() -1.0).abs() < 1e-4);
+        }
+    }
 }
