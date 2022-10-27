@@ -91,6 +91,8 @@ fn construct_type_2_matrix(u: &SingleQubitGate) -> TwoQubitGate {
     for (row, u_row) in result.iter_mut().skip(1).zip(u.0.iter()) {
         row[1..3].copy_from_slice(u_row);
     }
+    result[0][0] = Complex32::new(1.0, 0.0);
+    result[3][3] = Complex32::new(1.0, 0.0);
 
     TwoQubitGate(result)
 }
@@ -137,7 +139,7 @@ mod tests {
     fn type_2_test() {
         let expected_gate = TwoQubitGate([
             [
-                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
                 Complex32::new(0.0, 0.0),
                 Complex32::new(0.0, 0.0),
                 Complex32::new(0.0, 0.0),
@@ -158,7 +160,7 @@ mod tests {
                 Complex32::new(0.0, 0.0),
                 Complex32::new(0.0, 0.0),
                 Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
             ],
         ]);
 
@@ -177,7 +179,8 @@ mod tests {
     fn unitary_4x4() {
         let mut rand = Rand::new(0);
         for _ in 0..10 {
-            assert!((random_4x4_unitary(&mut rand).determinant().norm() -1.0).abs() < 1e-4);
+            let matrix = random_4x4_unitary(&mut rand);
+            assert!((matrix.determinant().norm() -1.0).abs() < 1e-4);
         }
     }
 }
