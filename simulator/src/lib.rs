@@ -9,7 +9,7 @@ pub mod two_qubit_gate;
 pub use single_qubit_gate::SingleQubitGate;
 pub use two_qubit_gate::TwoQubitGate;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct State(Vec<Complex32>);
 
 impl State {
@@ -69,6 +69,12 @@ impl fmt::Display for State {
             )?;
         }
         Ok(())
+    }
+}
+
+impl fmt::Debug for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
@@ -420,22 +426,20 @@ mod tests {
 
             let result = state
                 .apply_two_qubit_gate(0, 1, &CNOT)
-                .apply_single_qubit_gate(3, &r_y)
                 .apply_single_qubit_gate(2, &Y)
-                .apply_two_qubit_gate(2, 1, &CNOT)
+                .apply_two_qubit_gate(1, 2, &CNOT)
                 .apply_single_qubit_gate(2, &r_x)
-                .apply_two_qubit_gate(3, 0, &CNOT)
-                .apply_single_qubit_gate(3, &T)
+                .apply_single_qubit_gate(3, &r_y)
+                .apply_two_qubit_gate(0, 3, &CNOT)
                 .apply_single_qubit_gate(1, &X)
+                .apply_single_qubit_gate(3, &T)
                 .apply_single_qubit_gate(0, &H)
                 .apply_single_qubit_gate(3, &H)
-                .apply_two_qubit_gate(0, 3, &suren_gate)
-                .apply_single_qubit_gate(0, &H)
-                .apply_single_qubit_gate(3, &H);
+                .apply_two_qubit_gate(3, 0, &suren_gate)
+                .apply_single_qubit_gate(3, &H)
+                .apply_single_qubit_gate(0, &H);
 
             println!("{}", &result);
-
-            todo!();
         }
     }
 }

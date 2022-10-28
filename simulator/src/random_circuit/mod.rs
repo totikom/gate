@@ -9,6 +9,7 @@ use super::{SingleQubitGate, TwoQubitGate};
 use block::Block;
 use rand::{Rand, K};
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct RandomCircuitIter {
     n_qubits: u64,
     rand: Rand,
