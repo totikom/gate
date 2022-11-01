@@ -6,7 +6,7 @@ mod rand;
 
 use super::single_qubit_gate::consts::arbitrary_unitary_matrix;
 use super::{SingleQubitGate, TwoQubitGate};
-use block::Block;
+pub use block::Block;
 use rand::{Rand, K};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -172,7 +172,7 @@ mod tests {
     fn unitary_2x2() {
         let mut rand = Rand::new(0);
         for _ in 0..10 {
-            assert!((random_2x2_unitary(&mut rand).determinant().norm() -1.0).abs() < 1e-4);
+            assert!((random_2x2_unitary(&mut rand).determinant().norm() - 1.0).abs() < 1e-4);
         }
     }
 
@@ -181,7 +181,7 @@ mod tests {
         let mut rand = Rand::new(0);
         for _ in 0..10 {
             let matrix = random_4x4_unitary(&mut rand);
-            assert!((matrix.determinant().norm() -1.0).abs() < 1e-4);
+            assert!((matrix.determinant().norm() - 1.0).abs() < 1e-4);
         }
     }
 }

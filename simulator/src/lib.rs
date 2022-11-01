@@ -13,6 +13,10 @@ pub use two_qubit_gate::TwoQubitGate;
 pub struct State(Vec<Complex32>);
 
 impl State {
+    pub fn new(state: Vec<Complex32>) -> Self {
+        Self(state)
+    }
+
     pub fn apply_single_qubit_gate(&self, index: usize, gate: &SingleQubitGate) -> Self {
         let mut result: Vec<Complex32> = vec![Complex32::new(0.0, 0.0); self.0.len()];
 

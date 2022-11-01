@@ -104,6 +104,7 @@ dependencies = [
 name = "ui"
 version = "0.0.0"
 dependencies = [
+ "num-complex",
  "simulator",
 ]
 

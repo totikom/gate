@@ -6,3 +6,4 @@ edition = "2021"
 
 [dependencies]
 simulator = { path = "../simulator" }
+num-complex = "0.4.2"
