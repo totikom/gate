@@ -1,21 +1,43 @@
+use clap::Parser;
+use indicatif::{ProgressIterator, ProgressStyle};
 use num_complex::Complex32;
 use simulator::random_circuit::{Block, RandomCircuitIter};
 use simulator::State;
 
+#[derive(Debug, Parser)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(short, long, value_name = "NUM", default_value_t = 0)]
+    seed: u64,
+    #[arg(short, long, value_name = "NUM", default_value_t = 3)]
+    qubits: u64,
+    #[arg(short, long, value_name = "NUM", default_value_t = 10)]
+    gates: usize,
+    #[arg(short, long)]
+    drop_final_state: bool,
+}
 fn main() {
-    let seed = 0;
-    let n_qubits = 4;
-    let n_gates = 10;
-    let mut circuit_builder = RandomCircuitIter::new(seed, n_qubits);
+    let cli = Args::parse();
 
-    let mut state = vec![Complex32::new(0.0, 0.0); 1 << n_qubits];
+    let mut circuit_builder = RandomCircuitIter::new(cli.seed, cli.qubits);
+
+    let mut state = vec![Complex32::new(0.0, 0.0); 1 << cli.qubits];
+
     state[0] = Complex32::new(1.0, 0.0);
     let mut state = State::new(state);
+
     println!(
         "Seed =  {}, number of qubits = {}, number of gates {}",
-        seed, n_qubits, n_gates
+        cli.seed, cli.qubits, cli.gates
     );
-    for _ in 0..n_gates {
+
+    for _ in (0..cli.gates).progress().with_style(
+        ProgressStyle::with_template(
+            "[{elapsed_precise}] {wide_bar:.cyan/blue} {pos:>7}/{len:7} {msg}",
+        )
+        .unwrap()
+        .progress_chars("##-"),
+    ) {
         let gate = circuit_builder.next().unwrap();
         //println!("{}", &gate);
         match gate {
@@ -36,5 +58,7 @@ fn main() {
         }
     }
 
-    println!("{}", state);
+    if !cli.drop_final_state {
+        println!("{}", state);
+    }
 }
