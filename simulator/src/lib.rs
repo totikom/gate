@@ -20,10 +20,10 @@ impl State {
     pub fn apply_single_qubit_gate(&self, index: usize, gate: &SingleQubitGate) -> Self {
         let mut result: Vec<Complex32> = vec![Complex32::new(0.0, 0.0); self.0.len()];
 
-        for i in 0..self.0.len() {
+        for (i, val) in result.iter_mut().enumerate() {
             let i_negated = i ^ (1 << index);
 
-            result[i] = if (i & 1 << index) == 0 {
+            *val = if (i & 1 << index) == 0 {
                 gate.0[0][0] * self.0[i] + gate.0[0][1] * self.0[i_negated]
             } else {
                 gate.0[1][1] * self.0[i] + gate.0[1][0] * self.0[i_negated]
@@ -40,7 +40,7 @@ impl State {
     ) -> Self {
         let mut result: Vec<Complex32> = vec![Complex32::new(0.0, 0.0); self.0.len()];
 
-        for i in 0..self.0.len() {
+        for (i, val) in result.iter_mut().enumerate() {
             //dbg!(i);
             let gate_index = if second_index == 0 {
                 (i & 1 << first_index) >> first_index | (i & 1 << second_index) << 1
@@ -50,8 +50,7 @@ impl State {
             };
             //dbg!(gate_index);
 
-            result[i] = gate.0[gate_index][0]
-                * self.0[(i & !(1 << first_index)) & !(1 << second_index)]
+            *val = gate.0[gate_index][0] * self.0[(i & !(1 << first_index)) & !(1 << second_index)]
                 + gate.0[gate_index][1] * self.0[(i | (1 << first_index)) & !(1 << second_index)]
                 + gate.0[gate_index][2] * self.0[(i & !(1 << first_index)) | (1 << second_index)]
                 + gate.0[gate_index][3] * self.0[(i | (1 << first_index)) | (1 << second_index)];
@@ -64,13 +63,7 @@ impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (idx, amp) in self.0.iter().enumerate() {
             let len = self.0.len().ilog2() as usize;
-            writeln!(
-                f,
-                "{} ({}{:+}i)",
-                format!("|{:0len$b}>", idx),
-                amp.re,
-                amp.im
-            )?;
+            writeln!(f, "|{:0len$b}> ({}{:+}i)", idx, amp.re, amp.im)?;
         }
         Ok(())
     }

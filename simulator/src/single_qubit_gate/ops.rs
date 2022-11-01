@@ -28,9 +28,9 @@ impl std::ops::Add for SingleQubitGate {
     fn add(self, rhs: Self) -> Self {
         let mut result = [[Complex32::new(0.0, 0.0); 2]; 2];
 
-        for i in 0..2 {
-            for j in 0..2 {
-                result[i][j] = self.0[i][j] + rhs.0[i][j]
+        for (i, row) in result.iter_mut().enumerate() {
+            for (j, val) in row.iter_mut().enumerate() {
+                *val = self.0[i][j] + rhs.0[i][j]
             }
         }
         Self(result)
@@ -43,9 +43,9 @@ impl std::ops::Sub for SingleQubitGate {
     fn sub(self, rhs: Self) -> Self {
         let mut result = [[Complex32::new(0.0, 0.0); 2]; 2];
 
-        for i in 0..2 {
-            for j in 0..2 {
-                result[i][j] = self.0[i][j] - rhs.0[i][j]
+        for (i, row) in result.iter_mut().enumerate() {
+            for (j, val) in row.iter_mut().enumerate() {
+                *val = self.0[i][j] - rhs.0[i][j]
             }
         }
 
@@ -59,9 +59,9 @@ impl std::ops::Mul<Complex32> for SingleQubitGate {
     fn mul(self, rhs: Complex32) -> Self {
         let mut result = [[Complex32::new(0.0, 0.0); 2]; 2];
 
-        for i in 0..2 {
-            for j in 0..2 {
-                result[i][j] = self.0[i][j] * rhs
+        for (i, row) in result.iter_mut().enumerate() {
+            for (j, val) in row.iter_mut().enumerate() {
+                *val = self.0[i][j] * rhs
             }
         }
 
@@ -78,7 +78,7 @@ impl std::fmt::Display for SingleQubitGate {
             for value in value_iter {
                 write!(f, "\t{:.4}{:+.4}i", value.re, value.im)?;
             }
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
         Ok(())
     }
