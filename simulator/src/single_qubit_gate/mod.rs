@@ -21,6 +21,16 @@ impl SingleQubitGate {
     pub fn determinant(&self) -> Complex32 {
         self.0[0][0] * self.0[1][1] - self.0[0][1] * self.0[1][0]
     }
+
+    pub fn h_conj(&self) -> Self {
+        let mut result = [[Complex32::new(0.0,0.0);2];2];
+        for (i, row) in result.iter_mut().enumerate() {
+            for (j, val) in row.iter_mut().enumerate() {
+                *val = self.0[j][i].conj();
+            }
+        }
+        Self(result)
+    }
 }
 
 #[cfg(test)]
@@ -36,5 +46,8 @@ mod tests {
         assert_eq!(Z * Z, I);
         dbg!(I - H * H);
         assert!(I.distanse(&(H * H)) < 1e-4);
+        assert_eq!(X * X.h_conj(), I);
+        assert_eq!(Y * Y.h_conj(), I);
+        assert_eq!(Z * Z.h_conj(), I);
     }
 }
