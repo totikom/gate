@@ -9,6 +9,9 @@ pub mod two_qubit_gate;
 pub use single_qubit_gate::SingleQubitGate;
 pub use two_qubit_gate::TwoQubitGate;
 
+use single_qubit_gate::consts::{H, T};
+use two_qubit_gate::consts::{controlled_u, CNOT};
+
 #[derive(Clone, PartialEq)]
 pub struct State(Vec<Complex32>);
 
@@ -17,7 +20,7 @@ impl State {
         Self(state)
     }
 
-    pub fn apply_single_qubit_gate(&self, index: usize, gate: &SingleQubitGate) -> Self {
+    pub fn apply_single_qubit_gate(self, index: usize, gate: &SingleQubitGate) -> Self {
         let mut result: Vec<Complex32> = vec![Complex32::new(0.0, 0.0); self.0.len()];
 
         for (i, val) in result.iter_mut().enumerate() {
@@ -33,27 +36,28 @@ impl State {
     }
 
     pub fn apply_two_qubit_gate(
-        &self,
-        first_index: usize,
-        second_index: usize,
+        self,
+        control_index: usize,
+        target_index: usize,
         gate: &TwoQubitGate,
     ) -> Self {
         let mut result: Vec<Complex32> = vec![Complex32::new(0.0, 0.0); self.0.len()];
 
         for (i, val) in result.iter_mut().enumerate() {
             //dbg!(i);
-            let gate_index = if second_index == 0 {
-                (i & 1 << first_index) >> first_index | (i & 1 << second_index) << 1
+            let gate_index = if target_index == 0 {
+                (i & 1 << control_index) >> control_index | (i & 1 << target_index) << 1
             } else {
-                (i & 1 << first_index) >> first_index
-                    | (i & 1 << second_index) >> (second_index - 1)
+                (i & 1 << control_index) >> control_index
+                    | (i & 1 << target_index) >> (target_index - 1)
             };
             //dbg!(gate_index);
 
-            *val = gate.0[gate_index][0] * self.0[(i & !(1 << first_index)) & !(1 << second_index)]
-                + gate.0[gate_index][1] * self.0[(i | (1 << first_index)) & !(1 << second_index)]
-                + gate.0[gate_index][2] * self.0[(i & !(1 << first_index)) | (1 << second_index)]
-                + gate.0[gate_index][3] * self.0[(i | (1 << first_index)) | (1 << second_index)];
+            *val = gate.0[gate_index][0]
+                * self.0[(i & !(1 << control_index)) & !(1 << target_index)]
+                + gate.0[gate_index][1] * self.0[(i | (1 << control_index)) & !(1 << target_index)]
+                + gate.0[gate_index][2] * self.0[(i & !(1 << control_index)) | (1 << target_index)]
+                + gate.0[gate_index][3] * self.0[(i | (1 << control_index)) | (1 << target_index)];
         }
         Self(result)
     }
@@ -106,7 +110,7 @@ mod tests {
                 Complex32::new(0.0, 0.0),
             ]);
 
-            let result = state.apply_single_qubit_gate(1, &X);
+            let result = state.clone().apply_single_qubit_gate(1, &X);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -142,7 +146,7 @@ mod tests {
                 Complex32::new(0.0, 0.0),
             ]);
 
-            let result = state.apply_single_qubit_gate(0, &X);
+            let result = state.clone().apply_single_qubit_gate(0, &X);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -157,7 +161,7 @@ mod tests {
 
             assert_eq!(result, expected_state);
 
-            let result = state.apply_single_qubit_gate(1, &X);
+            let result = state.clone().apply_single_qubit_gate(1, &X);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -215,7 +219,7 @@ mod tests {
                 Complex32::new(0.0, 0.0),
             ]);
 
-            let result = state.apply_single_qubit_gate(1, &Z);
+            let result = state.clone().apply_single_qubit_gate(1, &Z);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),

@@ -47,4 +47,14 @@ impl TwoQubitGate {
                     - self.0[0][2] * self.0[1][1] * self.0[2][3]
                     - self.0[0][1] * self.0[1][3] * self.0[2][2])
     }
+
+    pub fn h_conj(&self) -> Self {
+        let mut result = [[Complex32::new(0.0,0.0);4];4];
+        for (i, row) in result.iter_mut().enumerate() {
+            for (j, val) in row.iter_mut().enumerate() {
+                *val = self.0[j][i].conj();
+            }
+        }
+        Self(result)
+    }
 }

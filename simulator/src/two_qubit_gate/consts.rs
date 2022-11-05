@@ -90,7 +90,7 @@ mod tests {
 
         let mut expected_result = [[Complex32::new(0.0, 0.0); 4]; 4];
 
-        for i in (0..3) {
+        for i in 0..3 {
             expected_result[i][i] = Complex32::new(1.0, 0.0);
         }
         expected_result[3][3] = Complex32::new(-1.0, 0.0);
