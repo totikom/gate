@@ -2,6 +2,7 @@
 #[cfg(feature = "indicatif")]
 use indicatif::{ProgressIterator, ProgressStyle};
 use num_complex::Complex32;
+
 use std::fmt;
 
 pub mod block;
@@ -27,15 +28,32 @@ impl State {
     pub fn apply_single_qubit_gate(self, index: usize, gate: &SingleQubitGate) -> Self {
         let mut result: Vec<Complex32> = vec![Complex32::new(0.0, 0.0); self.0.len()];
 
-        for (i, val) in result.iter_mut().enumerate() {
-            let i_negated = i ^ (1 << index);
+        let chunk_len = if result.len() <= num_cpus::get() {
+            result.len()
+        } else {
+            result.len() / num_cpus::get()
+        };
 
-            *val = if (i & 1 << index) == 0 {
-                gate.0[0][0] * self.0[i] + gate.0[0][1] * self.0[i_negated]
-            } else {
-                gate.0[1][1] * self.0[i] + gate.0[1][0] * self.0[i_negated]
+        crossbeam::scope(|scope| {
+            for (thread_idx, chunk) in result.chunks_mut(chunk_len).enumerate() {
+                let old_state = &self.0;
+                scope.spawn(move |_| {
+                    let offset = thread_idx * chunk_len;
+                    for (i, val) in chunk.iter_mut().enumerate() {
+                        let i = i + offset;
+                        let i_negated = i ^ (1 << index);
+
+                        *val = if (i & 1 << index) == 0 {
+                            gate.0[0][0] * old_state[i] + gate.0[0][1] * old_state[i_negated]
+                        } else {
+                            gate.0[1][1] * old_state[i] + gate.0[1][0] * old_state[i_negated]
+                        }
+                    }
+                });
             }
-        }
+        })
+        .unwrap();
+
         Self(result)
     }
 
@@ -47,22 +65,42 @@ impl State {
     ) -> Self {
         let mut result: Vec<Complex32> = vec![Complex32::new(0.0, 0.0); self.0.len()];
 
-        for (i, val) in result.iter_mut().enumerate() {
-            //dbg!(i);
-            let gate_index = if target_index == 0 {
-                (i & 1 << control_index) >> control_index | (i & 1 << target_index) << 1
-            } else {
-                (i & 1 << control_index) >> control_index
-                    | (i & 1 << target_index) >> (target_index - 1)
-            };
-            //dbg!(gate_index);
+        let chunk_len = if result.len() <= num_cpus::get() {
+            result.len()
+        } else {
+            result.len() / num_cpus::get()
+        };
 
-            *val = gate.0[gate_index][0]
-                * self.0[(i & !(1 << control_index)) & !(1 << target_index)]
-                + gate.0[gate_index][1] * self.0[(i | (1 << control_index)) & !(1 << target_index)]
-                + gate.0[gate_index][2] * self.0[(i & !(1 << control_index)) | (1 << target_index)]
-                + gate.0[gate_index][3] * self.0[(i | (1 << control_index)) | (1 << target_index)];
-        }
+        crossbeam::scope(|scope| {
+            for (thread_idx, chunk) in result.chunks_mut(chunk_len).enumerate() {
+                let old_state = &self.0;
+                scope.spawn(move |_| {
+                    let offset = thread_idx * chunk_len;
+
+                    for (i, val) in chunk.iter_mut().enumerate() {
+                        //dbg!(i);
+                        let i = i + offset;
+                        let gate_index = if target_index == 0 {
+                            (i & 1 << control_index) >> control_index | (i & 1 << target_index) << 1
+                        } else {
+                            (i & 1 << control_index) >> control_index
+                                | (i & 1 << target_index) >> (target_index - 1)
+                        };
+                        //dbg!(gate_index);
+
+                        *val = gate.0[gate_index][0]
+                            * old_state[(i & !(1 << control_index)) & !(1 << target_index)]
+                            + gate.0[gate_index][1]
+                                * old_state[(i | (1 << control_index)) & !(1 << target_index)]
+                            + gate.0[gate_index][2]
+                                * old_state[(i & !(1 << control_index)) | (1 << target_index)]
+                            + gate.0[gate_index][3]
+                                * old_state[(i | (1 << control_index)) | (1 << target_index)];
+                    }
+                });
+            }
+        })
+        .unwrap();
         Self(result)
     }
 
@@ -544,7 +582,6 @@ mod tests {
 
     mod toffoli {
         use super::*;
-        use pretty_assertions::assert_eq;
 
         #[test]
         fn state_000() {

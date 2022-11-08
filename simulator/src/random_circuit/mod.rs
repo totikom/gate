@@ -65,7 +65,6 @@ impl ExactSizeIterator for RandomCircuitIter {
     }
 }
 
-
 fn random_2x2_unitary(rand: &mut Rand) -> SingleQubitGate {
     let a = rand.next().unwrap() as f32 / (K as f32) * TAU;
     let b = rand.next().unwrap() as f32 / (K as f32) * TAU;

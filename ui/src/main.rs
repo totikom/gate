@@ -1,6 +1,6 @@
 use clap::Parser;
 use num_complex::Complex32;
-use simulator::random_circuit::{Block, RandomCircuitIter};
+use simulator::random_circuit::RandomCircuitIter;
 use simulator::State;
 
 #[derive(Debug, Parser)]
