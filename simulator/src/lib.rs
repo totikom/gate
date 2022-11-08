@@ -1,11 +1,15 @@
 #![feature(int_log)]
+#[cfg(feature = "indicatif")]
+use indicatif::{ProgressIterator, ProgressStyle};
 use num_complex::Complex32;
 use std::fmt;
 
+pub mod block;
 pub mod random_circuit;
 pub mod single_qubit_gate;
 pub mod two_qubit_gate;
 
+pub use block::Block;
 pub use single_qubit_gate::SingleQubitGate;
 pub use two_qubit_gate::TwoQubitGate;
 
@@ -110,6 +114,50 @@ impl State {
             .map(|(x, y)| (x - y).norm())
             .reduce(|x, y| x + y)
             .unwrap()
+    }
+
+    pub fn evaluate_circuit<I>(mut self, circuit: I) -> Self
+    where
+        I: Iterator<Item = Block>,
+    {
+        for gate in circuit {
+            self = self.evaluate_gate(&gate)
+        }
+        self
+    }
+
+    #[cfg(feature = "indicatif")]
+    pub fn evaluate_circuit_progress_bar<I>(mut self, circuit: I) -> Self
+    where
+        I: Iterator<Item = Block> + std::iter::ExactSizeIterator,
+    {
+        for gate in circuit.progress().with_style(
+            ProgressStyle::with_template(
+                "[{elapsed_precise}] {wide_bar:.cyan/blue} {pos:>7}/{len:7} {msg}",
+            )
+            .unwrap()
+            .progress_chars("##-"),
+        ) {
+            self = self.evaluate_gate(&gate)
+        }
+        self
+    }
+
+    fn evaluate_gate<'a>(self, gate: &'a Block) -> Self {
+        match gate {
+            Block::SingleQubitGate { gate, qubit_idx } => {
+                self.apply_single_qubit_gate(*qubit_idx as usize, gate)
+            }
+            Block::TwoQubitGate {
+                gate,
+                control_qubit_idx,
+                target_qubit_idx,
+            } => self.apply_two_qubit_gate(
+                *target_qubit_idx as usize,
+                *control_qubit_idx as usize,
+                gate,
+            ),
+        }
     }
 }
 
@@ -493,7 +541,7 @@ mod tests {
             println!("{}", &result);
         }
     }
-    
+
     mod toffoli {
         use super::*;
         use pretty_assertions::assert_eq;

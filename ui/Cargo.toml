@@ -6,6 +6,5 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.0.18", features = ["derive"] }
-simulator = { path = "../simulator" }
+simulator = { path = "../simulator", features = ["indicatif"]}
 num-complex = "0.4.2"
-indicatif = "0.17.1"
