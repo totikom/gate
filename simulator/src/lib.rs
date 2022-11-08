@@ -9,8 +9,8 @@ pub mod two_qubit_gate;
 pub use single_qubit_gate::SingleQubitGate;
 pub use two_qubit_gate::TwoQubitGate;
 
-use single_qubit_gate::consts::{H, T};
-use two_qubit_gate::consts::{controlled_u, CNOT};
+use single_qubit_gate::gates::{H, T};
+use two_qubit_gate::gates::{controlled_u, CNOT};
 
 #[derive(Clone, PartialEq)]
 pub struct State(Vec<Complex32>);
@@ -132,8 +132,8 @@ impl fmt::Debug for State {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::single_qubit_gate::consts::*;
-    use crate::two_qubit_gate::consts::*;
+    use crate::single_qubit_gate::gates::*;
+    use crate::two_qubit_gate::gates::*;
     use std::f32::consts::{FRAC_PI_3, PI, SQRT_2};
 
     mod single_qubit_gate {

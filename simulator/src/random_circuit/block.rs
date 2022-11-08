@@ -40,8 +40,8 @@ impl fmt::Display for Block {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::single_qubit_gate::consts::*;
-    use crate::two_qubit_gate::consts::*;
+    use crate::single_qubit_gate::gates::*;
+    use crate::two_qubit_gate::gates::*;
     use pretty_assertions::assert_eq;
 
     const X_STRING: &str = "Single qubit gate on 1 qubit\n\

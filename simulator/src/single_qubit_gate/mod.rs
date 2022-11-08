@@ -1,6 +1,6 @@
 use num_complex::Complex32;
 
-pub mod consts;
+pub mod gates;
 mod ops;
 
 #[derive(Clone, Copy, PartialEq)]
@@ -36,7 +36,7 @@ impl SingleQubitGate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use consts::*;
+    use gates::*;
     use pretty_assertions::assert_eq;
 
     #[test]

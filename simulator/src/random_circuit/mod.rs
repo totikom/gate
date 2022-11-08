@@ -4,7 +4,7 @@ use std::f32::consts::TAU;
 mod block;
 mod rand;
 
-use super::single_qubit_gate::consts::arbitrary_unitary_matrix;
+use super::single_qubit_gate::gates::arbitrary_unitary_matrix;
 use super::{SingleQubitGate, TwoQubitGate};
 pub use block::Block;
 use rand::{Rand, K};
@@ -101,7 +101,7 @@ fn construct_type_2_matrix(u: &SingleQubitGate) -> TwoQubitGate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::single_qubit_gate::consts::*;
+    use crate::single_qubit_gate::gates::*;
     use pretty_assertions::assert_eq;
 
     #[test]

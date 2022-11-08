@@ -73,7 +73,7 @@ pub fn controlled_u(u: &SingleQubitGate) -> TwoQubitGate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::single_qubit_gate::consts::{X, Z};
+    use crate::single_qubit_gate::gates::{X, Z};
 
     use pretty_assertions::assert_eq;
 
