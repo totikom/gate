@@ -283,134 +283,108 @@ mod tests {
 
         #[test]
         fn single_qubit_x() {
-            let qubit = State(vec![Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)]);
+            let mut state = State::from_bit_str("0").unwrap();
+            let mut temp_state = State::from_bit_str("0").unwrap();
 
-            let result = qubit.apply_single_qubit_gate(0, &X);
+            state.apply_single_qubit_gate(0, &X, &mut temp_state);
 
-            let expected_qubit = State(vec![Complex32::new(0.0, 0.0), Complex32::new(1.0, 0.0)]);
+            let expected_state = State::from_bit_str("1").unwrap();
 
-            assert_eq!(result, expected_qubit);
+            assert_eq!(state, expected_state);
         }
 
         #[test]
         fn two_qubits_x() {
-            let state = State(vec![
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let mut state = State::from_bit_str("00").unwrap();
+            let mut temp_state = State::from_bit_str("00").unwrap();
 
-            let result = state.clone().apply_single_qubit_gate(1, &X);
+            state.apply_single_qubit_gate(0, &X, &mut temp_state);
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let expected_state = State::from_bit_str("01").unwrap();
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
 
-            let result = state.apply_single_qubit_gate(0, &X);
+            let mut state = State::from_bit_str("10").unwrap();
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            state.apply_single_qubit_gate(0, &X, &mut temp_state);
 
-            assert_eq!(result, expected_state);
+            let expected_state = State::from_bit_str("11").unwrap();
+
+            assert_eq!(state, expected_state);
         }
 
         #[test]
         fn three_qubits_x() {
-            let state = State(vec![
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let mut state = State::from_bit_str("000").unwrap();
+            let mut temp_state = State::from_bit_str("000").unwrap();
 
-            let result = state.clone().apply_single_qubit_gate(0, &X);
+            state.apply_single_qubit_gate(0, &X, &mut temp_state);
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let expected_state = State::from_bit_str("001").unwrap();
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
 
-            let result = state.clone().apply_single_qubit_gate(1, &X);
+            let mut state = State::from_bit_str("010").unwrap();
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            state.apply_single_qubit_gate(0, &X, &mut temp_state);
 
-            assert_eq!(result, expected_state);
+            let expected_state = State::from_bit_str("011").unwrap();
 
-            let result = state.apply_single_qubit_gate(2, &X);
+            assert_eq!(state, expected_state);
+            
+            let mut state = State::from_bit_str("000").unwrap();
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            state.apply_single_qubit_gate(1, &X, &mut temp_state);
 
-            assert_eq!(result, expected_state);
+            let expected_state = State::from_bit_str("010").unwrap();
+
+            assert_eq!(state, expected_state);
+
+            let mut state = State::from_bit_str("010").unwrap();
+
+            state.apply_single_qubit_gate(1, &X, &mut temp_state);
+
+            let expected_state = State::from_bit_str("000").unwrap();
+
+            assert_eq!(state, expected_state);
         }
+
         #[test]
         fn single_qubit_z() {
-            let qubit = State(vec![Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)]);
+            let mut qubit = State(vec![Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)]);
+            let mut tmp_qubit = State(vec![Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)]);
 
-            let result = qubit.apply_single_qubit_gate(0, &Z);
+            qubit.apply_single_qubit_gate(0, &Z, &mut tmp_qubit);
 
             let expected_qubit = State(vec![Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)]);
 
-            assert_eq!(result, expected_qubit);
+            assert_eq!(qubit, expected_qubit);
 
-            let qubit = State(vec![Complex32::new(0.0, 0.0), Complex32::new(1.0, 0.0)]);
+            let mut qubit = State(vec![Complex32::new(0.0, 0.0), Complex32::new(1.0, 0.0)]);
 
-            let result = qubit.apply_single_qubit_gate(0, &Z);
+            qubit.apply_single_qubit_gate(0, &Z, &mut tmp_qubit);
 
             let expected_qubit = State(vec![Complex32::new(0.0, 0.0), Complex32::new(-1.0, 0.0)]);
 
-            assert_eq!(result, expected_qubit);
+            assert_eq!(qubit, expected_qubit);
         }
 
         #[test]
         fn two_qubits_z() {
-            let state = State(vec![
+            let mut state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+            let mut tmp_state = State(vec![
                 Complex32::new(0.0, 0.0),
                 Complex32::new(1.0, 0.0),
                 Complex32::new(0.0, 0.0),
                 Complex32::new(0.0, 0.0),
             ]);
 
-            let result = state.clone().apply_single_qubit_gate(1, &Z);
+            state.apply_single_qubit_gate(1, &Z, &mut tmp_state);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -419,9 +393,16 @@ mod tests {
                 Complex32::new(0.0, 0.0),
             ]);
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
 
-            let result = state.apply_single_qubit_gate(0, &Z);
+            let mut state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            state.apply_single_qubit_gate(0, &Z, &mut tmp_state);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -430,7 +411,7 @@ mod tests {
                 Complex32::new(0.0, 0.0),
             ]);
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
         }
     }
 
