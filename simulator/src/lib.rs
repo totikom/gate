@@ -827,8 +827,8 @@ mod tests {
             state = state.apply_single_qubit_gate(i, &H);
         }
 
-        for _ in 0..2_usize.pow(2) {
-            state = state.apply_n_controlled_gate(vec![0, 1, 2], vec![5, 6], 3, &X);
+        for _ in 0..2 {
+            state = state.apply_n_controlled_gate(vec![0, 1, 2], vec![5, 6], 3, &SZ);
 
             for i in 0..5 {
                 state = state.apply_single_qubit_gate(i, &H);
