@@ -21,16 +21,18 @@ fn main() {
     let circuit_builder = RandomCircuitIter::new(cli.seed, cli.qubits, cli.gates);
 
     let mut state = vec![Complex32::new(0.0, 0.0); 1 << cli.qubits];
+    let tmp_state = vec![Complex32::new(0.0, 0.0); 1 << cli.qubits];
 
     state[0] = Complex32::new(1.0, 0.0);
     let mut state = State::new(state);
+    let mut tmp_state = State::new(tmp_state);
 
     println!(
         "Seed =  {}, number of qubits = {}, number of gates {}",
         cli.seed, cli.qubits, cli.gates
     );
 
-    state = state.evaluate_circuit_progress_bar(circuit_builder);
+    state.evaluate_circuit_progress_bar(circuit_builder, &mut tmp_state);
 
     if !cli.drop_final_state {
         println!("{}", state);

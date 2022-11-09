@@ -33,8 +33,13 @@ impl State {
         Ok(Self(state))
     }
 
-    pub fn apply_single_qubit_gate(&mut self, index: usize, gate: &SingleQubitGate, temp_state: &mut State) {
-        let result = temp_state.0;
+    pub fn apply_single_qubit_gate(
+        &mut self,
+        index: usize,
+        gate: &SingleQubitGate,
+        temp_state: &mut State,
+    ) {
+        let result = &mut temp_state.0;
         let chunk_len = if result.len() <= num_cpus::get() {
             result.len()
         } else {
@@ -61,7 +66,7 @@ impl State {
         })
         .unwrap();
 
-        std::mem::swap(self.0, temp_state.0);
+        std::mem::swap(&mut self.0, &mut temp_state.0);
     }
 
     pub fn apply_two_qubit_gate(
@@ -71,7 +76,7 @@ impl State {
         gate: &TwoQubitGate,
         temp_state: &mut State,
     ) {
-        let result = temp_state.0;
+        let result = &mut temp_state.0;
 
         let chunk_len = if result.len() <= num_cpus::get() {
             result.len()
@@ -110,45 +115,51 @@ impl State {
         })
         .unwrap();
 
-        std::mem::swap(self.0, temp_state.0);
+        std::mem::swap(&mut self.0, &mut temp_state.0);
     }
 
-    pub fn diffuse(mut self, index: usize) -> Self {
+    pub fn diffuse(&mut self, index: usize) {
         self.0[2_usize.pow(index as u32)] = -self.0[2_usize.pow(index as u32)];
-        self
     }
 
-    pub fn apply_toffoli_gate(&mut self, control_1: usize, control_2: usize, target: usize, temp_state: &mut State) {
+    pub fn apply_toffoli_gate(
+        &mut self,
+        control_1: usize,
+        control_2: usize,
+        target: usize,
+        temp_state: &mut State,
+    ) {
         self.apply_single_qubit_gate(target, &H, temp_state);
-            .apply_two_qubit_gate(control_2, target, &CNOT)
-            .apply_single_qubit_gate(target, &T.h_conj())
-            .apply_two_qubit_gate(control_1, target, &CNOT)
-            .apply_single_qubit_gate(target, &T)
-            .apply_two_qubit_gate(control_2, target, &CNOT)
-            .apply_single_qubit_gate(target, &T.h_conj())
-            .apply_two_qubit_gate(control_1, target, &CNOT)
-            .apply_single_qubit_gate(control_2, &T)
-            .apply_single_qubit_gate(target, &T)
-            .apply_two_qubit_gate(control_1, control_2, &CNOT)
-            .apply_single_qubit_gate(target, &H)
-            .apply_single_qubit_gate(control_1, &T)
-            .apply_single_qubit_gate(control_2, &T.h_conj())
-            .apply_two_qubit_gate(control_1, control_2, &CNOT)
+        self.apply_two_qubit_gate(control_2, target, &CNOT, temp_state);
+        self.apply_single_qubit_gate(target, &T.h_conj(), temp_state);
+        self.apply_two_qubit_gate(control_1, target, &CNOT, temp_state);
+        self.apply_single_qubit_gate(target, &T, temp_state);
+        self.apply_two_qubit_gate(control_2, target, &CNOT, temp_state);
+        self.apply_single_qubit_gate(target, &T.h_conj(), temp_state);
+        self.apply_two_qubit_gate(control_1, target, &CNOT, temp_state);
+        self.apply_single_qubit_gate(control_2, &T, temp_state);
+        self.apply_single_qubit_gate(target, &T, temp_state);
+        self.apply_two_qubit_gate(control_1, control_2, &CNOT, temp_state);
+        self.apply_single_qubit_gate(target, &H, temp_state);
+        self.apply_single_qubit_gate(control_1, &T, temp_state);
+        self.apply_single_qubit_gate(control_2, &T.h_conj(), temp_state);
+        self.apply_two_qubit_gate(control_1, control_2, &CNOT, temp_state);
     }
 
     pub fn apply_controlled_controlled_gate(
-        self,
+        &mut self,
         control_1: usize,
         control_2: usize,
         target: usize,
         sqr_root_u: &SingleQubitGate,
-    ) -> Self {
+        temp_state: &mut State,
+    ) {
         let controlled_root_u = controlled_u(sqr_root_u);
-        self.apply_two_qubit_gate(control_2, target, &controlled_root_u)
-            .apply_two_qubit_gate(control_1, control_2, &CNOT)
-            .apply_two_qubit_gate(control_2, target, &controlled_root_u.h_conj())
-            .apply_two_qubit_gate(control_1, control_2, &CNOT)
-            .apply_two_qubit_gate(control_1, target, &controlled_root_u)
+        self.apply_two_qubit_gate(control_2, target, &controlled_root_u, temp_state);
+        self.apply_two_qubit_gate(control_1, control_2, &CNOT, temp_state);
+        self.apply_two_qubit_gate(control_2, target, &controlled_root_u.h_conj(), temp_state);
+        self.apply_two_qubit_gate(control_1, control_2, &CNOT, temp_state);
+        self.apply_two_qubit_gate(control_1, target, &controlled_root_u, temp_state);
     }
 
     pub fn apply_n_controlled_gate(
@@ -157,24 +168,29 @@ impl State {
         ancillas: Vec<usize>,
         target: usize,
         u: &SingleQubitGate,
-    ) -> Self {
+        temp_state: &mut State,
+    ) {
         assert_eq!(controllers.len(), ancillas.len() + 1);
         assert!(controllers.len() > 2);
 
         let controlled_u = controlled_u(u);
 
-        self = self.apply_toffoli_gate(controllers[0], controllers[1], ancillas[0]);
+        self.apply_toffoli_gate(controllers[0], controllers[1], ancillas[0], temp_state);
 
         for (ancilla_pair, control) in ancillas.windows(2).zip(controllers.iter().skip(2)) {
-            self = self.apply_toffoli_gate(*control, ancilla_pair[0], ancilla_pair[1]);
+            self.apply_toffoli_gate(*control, ancilla_pair[0], ancilla_pair[1], temp_state);
         }
 
-        self = self.apply_two_qubit_gate(ancillas[ancillas.len() - 1], target, &controlled_u);
+        self.apply_two_qubit_gate(
+            ancillas[ancillas.len() - 1],
+            target,
+            &controlled_u,
+            temp_state,
+        );
 
         for (ancilla_pair, control) in ancillas.windows(2).rev().zip(controllers.iter().rev()) {
-            self = self.apply_toffoli_gate(*control, ancilla_pair[0], ancilla_pair[1]);
+            self.apply_toffoli_gate(*control, ancilla_pair[0], ancilla_pair[1], temp_state);
         }
-        self
     }
 
     pub fn norm(&self) -> f32 {
@@ -194,18 +210,17 @@ impl State {
             .unwrap()
     }
 
-    pub fn evaluate_circuit<I>(mut self, circuit: I) -> Self
+    pub fn evaluate_circuit<I>(mut self, circuit: I, temp_state: &mut State)
     where
         I: Iterator<Item = Block>,
     {
         for gate in circuit {
-            self = self.evaluate_gate(&gate)
+            self.evaluate_gate(&gate, temp_state);
         }
-        self
     }
 
     #[cfg(feature = "indicatif")]
-    pub fn evaluate_circuit_progress_bar<I>(mut self, circuit: I) -> Self
+    pub fn evaluate_circuit_progress_bar<I>(&mut self, circuit: I, temp_state: &mut State)
     where
         I: Iterator<Item = Block> + std::iter::ExactSizeIterator,
     {
@@ -216,24 +231,24 @@ impl State {
             .unwrap()
             .progress_chars("##-"),
         ) {
-            self = self.evaluate_gate(&gate)
+            self.evaluate_gate(&gate, temp_state);
         }
-        self
     }
 
-    fn evaluate_gate<'a>(self, gate: &'a Block) -> Self {
+    fn evaluate_gate<'a>(&mut self, gate: &'a Block, temp_state: &mut State) {
         match gate {
             Block::SingleQubitGate { gate, qubit_idx } => {
-                self.apply_single_qubit_gate(*qubit_idx as usize, gate)
+                self.apply_single_qubit_gate(*qubit_idx as usize, gate, temp_state)
             }
             Block::TwoQubitGate {
                 gate,
                 control_qubit_idx,
                 target_qubit_idx,
             } => self.apply_two_qubit_gate(
-                *target_qubit_idx as usize,
                 *control_qubit_idx as usize,
+                *target_qubit_idx as usize,
                 gate,
+                temp_state,
             ),
         }
     }
