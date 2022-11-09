@@ -112,7 +112,7 @@ impl State {
         Self(result)
     }
 
-    pub fn apply_toffoly_gate(self, control_1: usize, control_2: usize, target: usize) -> Self {
+    pub fn apply_toffoli_gate(self, control_1: usize, control_2: usize, target: usize) -> Self {
         self.apply_single_qubit_gate(target, &H)
             .apply_two_qubit_gate(control_2, target, &CNOT)
             .apply_single_qubit_gate(target, &T.h_conj())
@@ -555,7 +555,7 @@ mod tests {
         fn state_000() {
             let state = State::from_bit_str("000").unwrap();
 
-            let result = state.apply_toffoly_gate(0, 1, 2);
+            let result = state.apply_toffoli_gate(0,1,2);
 
             let expected_state = State::from_bit_str("000").unwrap();
 
@@ -566,39 +566,73 @@ mod tests {
         fn state_001() {
             let state = State::from_bit_str("001").unwrap();
 
-            let result = state.apply_toffoly_gate(0, 1, 2);
+            let result = state.apply_toffoli_gate(0,1,2);
 
             let expected_state = State::from_bit_str("001").unwrap();
 
-            assert!(result.distance(&expected_state) < 1e-4);
+            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
         }
 
         #[test]
         fn state_010() {
             let state = State::from_bit_str("010").unwrap();
 
-            let result = state.apply_toffoly_gate(0, 1, 2);
+            let result = state.apply_toffoli_gate(0,1,2);
 
             let expected_state = State::from_bit_str("010").unwrap();
 
-            assert!(result.distance(&expected_state) < 1e-4);
+            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
         }
 
         #[test]
         fn state_011() {
             let state = State::from_bit_str("011").unwrap();
 
-            let result = state.apply_toffoly_gate(0, 1, 2);
+            let result = state.apply_toffoli_gate(0,1,2);
 
             let expected_state = State::from_bit_str("111").unwrap();
 
+            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
+        }
+
+        #[test]
+        fn state_100() {
+            let state = State::from_bit_str("100").unwrap();
+
+            let result = state.apply_toffoli_gate(0,1,2);
+
+            let expected_state = State::from_bit_str("100").unwrap();
+
+            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
+        }
+
+        #[test]
+        fn state_101() {
+            let state = State::from_bit_str("101").unwrap();
+
+            let result = state.apply_toffoli_gate(0,1,2);
+
+            let expected_state = State::from_bit_str("101").unwrap();
+
             assert!(result.distance(&expected_state) < 1e-4);
         }
+
+        #[test]
+        fn state_110() {
+            let state = State::from_bit_str("110").unwrap();
+
+            let result = state.apply_toffoli_gate(0,1,2);
+
+            let expected_state = State::from_bit_str("110").unwrap();
+
+            assert!(result.distance(&expected_state) < 1e-4);
+        }
+
         #[test]
         fn state_111() {
             let state = State::from_bit_str("111").unwrap();
 
-            let result = state.apply_toffoly_gate(0, 1, 2);
+            let result = state.apply_toffoli_gate(0,1,2);
 
             let expected_state = State::from_bit_str("011").unwrap();
 
@@ -665,14 +699,36 @@ mod tests {
         }
 
         #[test]
+        fn state_101() {
+            let state = State::from_bit_str("101").unwrap();
+
+            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
+
+            let expected_state = State::from_bit_str("101").unwrap();
+
+            assert!(result.distance(&expected_state) < 1e-4);
+        }
+
+        #[test]
         fn state_110() {
             let state = State::from_bit_str("110").unwrap();
 
             let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
 
-            let expected_state = State::from_bit_str("111").unwrap();
+            let expected_state = State::from_bit_str("110").unwrap();
 
-            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
+            assert!(result.distance(&expected_state) < 1e-4);
+        }
+
+        #[test]
+        fn state_111() {
+            let state = State::from_bit_str("111").unwrap();
+
+            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
+
+            let expected_state = State::from_bit_str("011").unwrap();
+
+            assert!(result.distance(&expected_state) < 1e-4);
         }
     }
 
