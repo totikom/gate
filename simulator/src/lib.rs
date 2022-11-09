@@ -112,6 +112,11 @@ impl State {
         Self(result)
     }
 
+    pub fn diffuse(self, index: usize) -> Self {
+        self.0[2.pow(index)] = -self.0[2.pow(index)];
+        self
+    }
+
     pub fn apply_toffoli_gate(self, control_1: usize, control_2: usize, target: usize) -> Self {
         self.apply_single_qubit_gate(target, &H)
             .apply_two_qubit_gate(control_2, target, &CNOT)
@@ -143,6 +148,32 @@ impl State {
             .apply_two_qubit_gate(control_2, target, &controlled_root_u.h_conj())
             .apply_two_qubit_gate(control_1, control_2, &CNOT)
             .apply_two_qubit_gate(control_1, target, &controlled_root_u)
+    }
+
+    pub fn apply_n_controlled_gate(
+        mut self,
+        controllers: Vec<usize>,
+        ancillas: Vec<usize>,
+        target: usize,
+        u: &SingleQubitGate,
+    ) -> Self {
+        assert_eq!(controllers.len(), ancillas.len() + 1);
+        assert!(controllers.len() > 2);
+
+        let controlled_u = controlled_u(u);
+
+        self = self.apply_toffoli_gate(controllers[0], controllers[1], ancillas[0]);
+
+        for (ancilla_pair, control) in ancillas.windows(2).zip(controllers.iter().skip(2)) {
+            self = self.apply_toffoli_gate(*control, ancilla_pair[0], ancilla_pair[1]);
+        }
+
+        self = self.apply_two_qubit_gate(ancillas[ancillas.len() - 1], target, &controlled_u);
+
+        for (ancilla_pair, control) in ancillas.windows(2).rev().zip(controllers.iter().rev()) {
+            self = self.apply_toffoli_gate(*control, ancilla_pair[0], ancilla_pair[1]);
+        }
+        self
     }
 
     pub fn norm(&self) -> f32 {
@@ -555,7 +586,7 @@ mod tests {
         fn state_000() {
             let state = State::from_bit_str("000").unwrap();
 
-            let result = state.apply_toffoli_gate(0,1,2);
+            let result = state.apply_toffoli_gate(0, 1, 2);
 
             let expected_state = State::from_bit_str("000").unwrap();
 
@@ -566,7 +597,7 @@ mod tests {
         fn state_001() {
             let state = State::from_bit_str("001").unwrap();
 
-            let result = state.apply_toffoli_gate(0,1,2);
+            let result = state.apply_toffoli_gate(0, 1, 2);
 
             let expected_state = State::from_bit_str("001").unwrap();
 
@@ -577,7 +608,7 @@ mod tests {
         fn state_010() {
             let state = State::from_bit_str("010").unwrap();
 
-            let result = state.apply_toffoli_gate(0,1,2);
+            let result = state.apply_toffoli_gate(0, 1, 2);
 
             let expected_state = State::from_bit_str("010").unwrap();
 
@@ -588,7 +619,7 @@ mod tests {
         fn state_011() {
             let state = State::from_bit_str("011").unwrap();
 
-            let result = state.apply_toffoli_gate(0,1,2);
+            let result = state.apply_toffoli_gate(0, 1, 2);
 
             let expected_state = State::from_bit_str("111").unwrap();
 
@@ -599,7 +630,7 @@ mod tests {
         fn state_100() {
             let state = State::from_bit_str("100").unwrap();
 
-            let result = state.apply_toffoli_gate(0,1,2);
+            let result = state.apply_toffoli_gate(0, 1, 2);
 
             let expected_state = State::from_bit_str("100").unwrap();
 
@@ -610,7 +641,7 @@ mod tests {
         fn state_101() {
             let state = State::from_bit_str("101").unwrap();
 
-            let result = state.apply_toffoli_gate(0,1,2);
+            let result = state.apply_toffoli_gate(0, 1, 2);
 
             let expected_state = State::from_bit_str("101").unwrap();
 
@@ -621,7 +652,7 @@ mod tests {
         fn state_110() {
             let state = State::from_bit_str("110").unwrap();
 
-            let result = state.apply_toffoli_gate(0,1,2);
+            let result = state.apply_toffoli_gate(0, 1, 2);
 
             let expected_state = State::from_bit_str("110").unwrap();
 
@@ -632,7 +663,7 @@ mod tests {
         fn state_111() {
             let state = State::from_bit_str("111").unwrap();
 
-            let result = state.apply_toffoli_gate(0,1,2);
+            let result = state.apply_toffoli_gate(0, 1, 2);
 
             let expected_state = State::from_bit_str("011").unwrap();
 
@@ -785,5 +816,29 @@ mod tests {
 
             assert_eq!(result, expected_state);
         }
+    }
+
+    #[test]
+    fn grover() {
+        let mut state = State::from_bit_str("0000000").unwrap();
+        //let mut state = State::from_br("00_0_0000").unwrap();
+
+        for i in 0..5 {
+            state = state.apply_single_qubit_gate(i, &H);
+        }
+
+        for _ in 0..2.pow(2) {
+            state = state.apply_n_controlled_gate(vec![0, 1, 2], vec![5, 6], 3, &X);
+
+            for i in 0..5 {
+                state = state.apply_single_qubit_gate(i, &H);
+            }
+            state = state.diffuse(2);
+            for i in 0..5 {
+                state = state.apply_single_qubit_gate(i, &H);
+            }
+        }
+
+        todo!();
     }
 }
