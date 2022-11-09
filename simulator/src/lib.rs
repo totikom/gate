@@ -112,8 +112,8 @@ impl State {
         Self(result)
     }
 
-    pub fn diffuse(self, index: usize) -> Self {
-        self.0[2.pow(index)] = -self.0[2.pow(index)];
+    pub fn diffuse(mut self, index: usize) -> Self {
+        self.0[2_usize.pow(index as u32)] = -self.0[2_usize.pow(index as u32)];
         self
     }
 
@@ -230,8 +230,8 @@ impl State {
                 control_qubit_idx,
                 target_qubit_idx,
             } => self.apply_two_qubit_gate(
-                *target_qubit_idx as usize,
                 *control_qubit_idx as usize,
+                *target_qubit_idx as usize,
                 gate,
             ),
         }
@@ -827,7 +827,7 @@ mod tests {
             state = state.apply_single_qubit_gate(i, &H);
         }
 
-        for _ in 0..2.pow(2) {
+        for _ in 0..2_usize.pow(2) {
             state = state.apply_n_controlled_gate(vec![0, 1, 2], vec![5, 6], 3, &X);
 
             for i in 0..5 {
@@ -838,6 +838,7 @@ mod tests {
                 state = state.apply_single_qubit_gate(i, &H);
             }
         }
+        println!("{}", state);
 
         todo!();
     }
