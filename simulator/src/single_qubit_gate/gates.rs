@@ -42,6 +42,11 @@ pub const H: SingleQubitGate = SingleQubitGate([
     ],
 ]);
 
+pub const SX: SingleQubitGate = SingleQubitGate([
+    [Complex32::new(0.5, 0.5), Complex32::new(0.5, -0.5)],
+    [Complex32::new(0.5, -0.5), Complex32::new(0.5, 0.5)],
+]);
+
 pub fn r_x(theta: f32) -> SingleQubitGate {
     let arg = theta / 2.0;
     SingleQubitGate([

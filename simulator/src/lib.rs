@@ -88,22 +88,22 @@ impl State {
                     for (i, val) in chunk.iter_mut().enumerate() {
                         //dbg!(i);
                         let i = i + offset;
-                        let gate_index = if target_index == 0 {
-                            (i & 1 << control_index) >> control_index | (i & 1 << target_index) << 1
+                        let gate_index = if control_index == 0 {
+                            (i & 1 << target_index) >> target_index | (i & 1 << control_index) << 1
                         } else {
-                            (i & 1 << control_index) >> control_index
-                                | (i & 1 << target_index) >> (target_index - 1)
+                            (i & 1 << target_index) >> target_index
+                                | (i & 1 << control_index) >> (control_index - 1)
                         };
                         //dbg!(gate_index);
 
                         *val = gate.0[gate_index][0]
-                            * old_state[(i & !(1 << control_index)) & !(1 << target_index)]
+                            * old_state[(i & !(1 << target_index)) & !(1 << control_index)]
                             + gate.0[gate_index][1]
-                                * old_state[(i | (1 << control_index)) & !(1 << target_index)]
+                                * old_state[(i | (1 << target_index)) & !(1 << control_index)]
                             + gate.0[gate_index][2]
-                                * old_state[(i & !(1 << control_index)) | (1 << target_index)]
+                                * old_state[(i & !(1 << target_index)) | (1 << control_index)]
                             + gate.0[gate_index][3]
-                                * old_state[(i | (1 << control_index)) | (1 << target_index)];
+                                * old_state[(i | (1 << target_index)) | (1 << control_index)];
                     }
                 });
             }
@@ -130,7 +130,7 @@ impl State {
             .apply_two_qubit_gate(control_1, control_2, &CNOT)
     }
 
-    pub fn controlled_controlled_gate(
+    pub fn apply_controlled_controlled_gate(
         self,
         control_1: usize,
         control_2: usize,
@@ -142,7 +142,7 @@ impl State {
             .apply_two_qubit_gate(control_1, control_2, &CNOT)
             .apply_two_qubit_gate(control_2, target, &controlled_root_u.h_conj())
             .apply_two_qubit_gate(control_1, control_2, &CNOT)
-            .apply_two_qubit_gate(control_2, target, &controlled_root_u)
+            .apply_two_qubit_gate(control_1, target, &controlled_root_u)
     }
 
     pub fn norm(&self) -> f32 {
@@ -393,75 +393,35 @@ mod tests {
 
         #[test]
         fn cnot() {
-            let state = State(vec![
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let state = State::from_bit_str("00").unwrap();
 
             let result = state.apply_two_qubit_gate(0, 1, &CNOT);
 
-            let expected_state = State(vec![
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let expected_state = State::from_bit_str("00").unwrap();
 
             assert_eq!(result, expected_state);
 
-            let state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let state = State::from_bit_str("01").unwrap();
 
             let result = state.apply_two_qubit_gate(0, 1, &CNOT);
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let expected_state = State::from_bit_str("11").unwrap();
 
             assert_eq!(result, expected_state);
 
-            let state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let state = State::from_bit_str("10").unwrap();
 
             let result = state.apply_two_qubit_gate(0, 1, &CNOT);
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-            ]);
+            let expected_state = State::from_bit_str("10").unwrap();
 
             assert_eq!(result, expected_state);
 
-            let state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-            ]);
+            let state = State::from_bit_str("11").unwrap();
 
             let result = state.apply_two_qubit_gate(0, 1, &CNOT);
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let expected_state = State::from_bit_str("01").unwrap();
 
             assert_eq!(result, expected_state);
         }
@@ -477,7 +437,7 @@ mod tests {
 
             let suren_gate = suren_gate(0.0, 1.0, 2.0, 3.0);
 
-            let result = state.apply_two_qubit_gate(0, 1, &suren_gate);
+            let result = state.apply_two_qubit_gate(1, 0, &suren_gate);
 
             let expected_state = State(vec![
                 Complex32::new(1.0, 0.0),
@@ -495,7 +455,7 @@ mod tests {
                 Complex32::new(0.0, 0.0),
             ]);
 
-            let result = state.apply_two_qubit_gate(0, 1, &suren_gate);
+            let result = state.apply_two_qubit_gate(1, 0, &suren_gate);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -513,7 +473,7 @@ mod tests {
                 Complex32::new(0.0, 0.0),
             ]);
 
-            let result = state.apply_two_qubit_gate(0, 1, &suren_gate);
+            let result = state.apply_two_qubit_gate(1, 0, &suren_gate);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -531,7 +491,7 @@ mod tests {
                 Complex32::new(1.0, 0.0),
             ]);
 
-            let result = state.apply_two_qubit_gate(0, 1, &suren_gate);
+            let result = state.apply_two_qubit_gate(1, 0, &suren_gate);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -593,120 +553,129 @@ mod tests {
 
         #[test]
         fn state_000() {
-            let state = State(vec![
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let state = State::from_bit_str("000").unwrap();
 
             let result = state.apply_toffoly_gate(0, 1, 2);
 
-            let expected_state = State(vec![
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let expected_state = State::from_bit_str("000").unwrap();
 
             assert!(result.distance(&expected_state) < 1e-4);
         }
 
         #[test]
         fn state_001() {
-            let state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let state = State::from_bit_str("001").unwrap();
 
             let result = state.apply_toffoly_gate(0, 1, 2);
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let expected_state = State::from_bit_str("001").unwrap();
+
+            assert!(result.distance(&expected_state) < 1e-4);
+        }
+
+        #[test]
+        fn state_010() {
+            let state = State::from_bit_str("010").unwrap();
+
+            let result = state.apply_toffoly_gate(0, 1, 2);
+
+            let expected_state = State::from_bit_str("010").unwrap();
+
+            assert!(result.distance(&expected_state) < 1e-4);
+        }
+
+        #[test]
+        fn state_011() {
+            let state = State::from_bit_str("011").unwrap();
+
+            let result = state.apply_toffoly_gate(0, 1, 2);
+
+            let expected_state = State::from_bit_str("111").unwrap();
+
+            assert!(result.distance(&expected_state) < 1e-4);
+        }
+        #[test]
+        fn state_111() {
+            let state = State::from_bit_str("111").unwrap();
+
+            let result = state.apply_toffoly_gate(0, 1, 2);
+
+            let expected_state = State::from_bit_str("011").unwrap();
+
+            assert!(result.distance(&expected_state) < 1e-4);
+        }
+    }
+
+    mod ccnot {
+        use super::*;
+
+        #[test]
+        fn state_000() {
+            let state = State::from_bit_str("000").unwrap();
+
+            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
+
+            let expected_state = State::from_bit_str("000").unwrap();
+
+            assert!(result.distance(&expected_state) < 1e-4);
+        }
+
+        #[test]
+        fn state_001() {
+            let state = State::from_bit_str("001").unwrap();
+
+            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
+
+            let expected_state = State::from_bit_str("001").unwrap();
 
             assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
         }
 
         #[test]
         fn state_010() {
-            let state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let state = State::from_bit_str("010").unwrap();
 
-            let result = state.apply_toffoly_gate(0, 1, 2);
+            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let expected_state = State::from_bit_str("010").unwrap();
 
             assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
         }
 
         #[test]
         fn state_011() {
-            let state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let state = State::from_bit_str("011").unwrap();
 
-            let result = state.apply_toffoly_gate(0, 1, 2);
+            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
 
-            let expected_state = State(vec![
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(1.0, 0.0),
-            ]);
+            let expected_state = State::from_bit_str("111").unwrap();
+
+            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
+        }
+
+        #[test]
+        fn state_100() {
+            let state = State::from_bit_str("100").unwrap();
+
+            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
+
+            let expected_state = State::from_bit_str("100").unwrap();
+
+            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
+        }
+
+        #[test]
+        fn state_110() {
+            let state = State::from_bit_str("110").unwrap();
+
+            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
+
+            let expected_state = State::from_bit_str("111").unwrap();
 
             assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
         }
     }
+
     mod str {
         use super::*;
         use pretty_assertions::assert_eq;
