@@ -25,6 +25,14 @@ impl State {
         Self(state)
     }
 
+    pub fn from_bit_str(state_str: &str) -> Result<Self, std::num::ParseIntError> {
+        let mut state = vec![Complex32::new(0.0, 0.0); 2_usize.pow(state_str.len() as u32)];
+        let index = usize::from_str_radix(state_str, 2)?;
+
+        state[index] = Complex32::new(1.0, 0.0);
+        Ok(Self(state))
+    }
+
     pub fn apply_single_qubit_gate(self, index: usize, gate: &SingleQubitGate) -> Self {
         let mut result: Vec<Complex32> = vec![Complex32::new(0.0, 0.0); self.0.len()];
 
@@ -697,6 +705,60 @@ mod tests {
             ]);
 
             assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
+        }
+    }
+    mod str {
+        use super::*;
+        use pretty_assertions::assert_eq;
+
+        #[test]
+        fn state_000() {
+            let result = State::from_bit_str("000").unwrap();
+
+            let expected_state = State(vec![
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
+        }
+
+        #[test]
+        fn state_001() {
+            let result = State::from_bit_str("001").unwrap();
+
+            let expected_state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
+        }
+
+        #[test]
+        fn state_10() {
+            let result = State::from_bit_str("10").unwrap();
+
+            let expected_state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
         }
     }
 }
