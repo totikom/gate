@@ -33,9 +33,8 @@ impl State {
         Ok(Self(state))
     }
 
-    pub fn apply_single_qubit_gate(self, index: usize, gate: &SingleQubitGate) -> Self {
-        let mut result: Vec<Complex32> = vec![Complex32::new(0.0, 0.0); self.0.len()];
-
+    pub fn apply_single_qubit_gate(&mut self, index: usize, gate: &SingleQubitGate, temp_state: &mut State) {
+        let result = temp_state.0;
         let chunk_len = if result.len() <= num_cpus::get() {
             result.len()
         } else {
@@ -62,16 +61,17 @@ impl State {
         })
         .unwrap();
 
-        Self(result)
+        std::mem::swap(self.0, temp_state.0);
     }
 
     pub fn apply_two_qubit_gate(
-        self,
+        &mut self,
         control_index: usize,
         target_index: usize,
         gate: &TwoQubitGate,
-    ) -> Self {
-        let mut result: Vec<Complex32> = vec![Complex32::new(0.0, 0.0); self.0.len()];
+        temp_state: &mut State,
+    ) {
+        let result = temp_state.0;
 
         let chunk_len = if result.len() <= num_cpus::get() {
             result.len()
@@ -109,16 +109,17 @@ impl State {
             }
         })
         .unwrap();
-        Self(result)
+
+        std::mem::swap(self.0, temp_state.0);
     }
 
-    pub fn diffuse(self, index: usize) -> Self {
-        self.0[2.pow(index)] = -self.0[2.pow(index)];
+    pub fn diffuse(mut self, index: usize) -> Self {
+        self.0[2_usize.pow(index as u32)] = -self.0[2_usize.pow(index as u32)];
         self
     }
 
-    pub fn apply_toffoli_gate(self, control_1: usize, control_2: usize, target: usize) -> Self {
-        self.apply_single_qubit_gate(target, &H)
+    pub fn apply_toffoli_gate(&mut self, control_1: usize, control_2: usize, target: usize, temp_state: &mut State) {
+        self.apply_single_qubit_gate(target, &H, temp_state);
             .apply_two_qubit_gate(control_2, target, &CNOT)
             .apply_single_qubit_gate(target, &T.h_conj())
             .apply_two_qubit_gate(control_1, target, &CNOT)
@@ -827,7 +828,7 @@ mod tests {
             state = state.apply_single_qubit_gate(i, &H);
         }
 
-        for _ in 0..2.pow(2) {
+        for _ in 0..2_usize.pow(2) {
             state = state.apply_n_controlled_gate(vec![0, 1, 2], vec![5, 6], 3, &X);
 
             for i in 0..5 {
@@ -839,6 +840,7 @@ mod tests {
             }
         }
 
+        println!("{}", state);
         todo!();
     }
 }
