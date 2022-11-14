@@ -33,6 +33,15 @@ impl State {
         Ok(Self(state))
     }
 
+    pub fn scalar_product(&self, rhs: &Self) -> Complex32 {
+        self.0
+            .iter()
+            .zip(rhs.0.iter())
+            .map(|(&x, &y)| x.conj() * y)
+            .reduce(|x, y| x + y)
+            .unwrap()
+    }
+
     pub fn apply_single_qubit_gate(
         &mut self,
         index: usize,
@@ -124,7 +133,7 @@ impl State {
         ancillas: Vec<usize>,
         temp_state: &mut State,
     ) {
-        assert_eq!(qubits_to_be_diffused.len(), ancillas.len() + 1);
+        assert_eq!(qubits_to_be_diffused.len(), ancillas.len() + 2);
         assert!(qubits_to_be_diffused.len() > 2);
 
         for &idx in qubits_to_be_diffused.iter() {
@@ -302,7 +311,8 @@ mod tests {
     use super::*;
     use crate::single_qubit_gate::gates::*;
     use crate::two_qubit_gate::gates::*;
-    use std::f32::consts::{FRAC_PI_3, PI, SQRT_2};
+    use num_complex::ComplexFloat;
+    use std::f32::consts::{FRAC_PI_3, FRAC_PI_4, PI, SQRT_2};
 
     mod single_qubit_gate {
         use super::*;
@@ -718,28 +728,28 @@ mod tests {
         }
     }
 
-    //#[test]
-    //fn grover() {
-    //let mut state = State::from_bit_str("0000000").unwrap();
-    ////let mut state = State::from_br("00_0_0000").unwrap();
+    #[test]
+    fn grover() {
+        let expected_state = State::from_bit_str("001111").unwrap();
+        let mut state = State::from_bit_str("000000").unwrap();
+        let mut temp_state = State::from_bit_str("000000").unwrap();
+        //                                  00_0000
+        //                                  2 ancillas
+        //                                  4 qubits
 
-    //for i in 0..5 {
-    //state = state.apply_single_qubit_gate(i, &H);
-    //}
+        let n = (FRAC_PI_4 * (2_u32.pow(4) as f32).sqrt()).floor() as usize;
 
-    //for _ in 0..2_usize.pow(2) {
-    //state = state.apply_n_controlled_gate(vec![0, 1, 2], vec![5, 6], 3, &X);
+        for i in 0..4 {
+            state.apply_single_qubit_gate(i, &H, &mut temp_state);
+        }
 
-    //for i in 0..5 {
-    //state = state.apply_single_qubit_gate(i, &H);
-    //}
-    //state = state.diffuse(2);
-    //for i in 0..5 {
-    //state = state.apply_single_qubit_gate(i, &H);
-    //}
-    //}
+        for i in 0..n {
+            state.apply_n_controlled_gate(vec![0, 1, 2], vec![4, 5], 3, &Z, &mut temp_state);
 
-    //println!("{}", state);
-    //todo!();
-    //}
+            state.grover_diffusion(vec![0, 1, 2, 3], vec![4, 5], &mut temp_state);
+            println!("{} {}", i, state.scalar_product(&expected_state).abs());
+        }
+
+        assert!(state.scalar_product(&expected_state).abs() > 0.98);
+    }
 }
