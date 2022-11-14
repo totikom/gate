@@ -14,7 +14,7 @@ pub use block::Block;
 pub use single_qubit_gate::SingleQubitGate;
 pub use two_qubit_gate::TwoQubitGate;
 
-use single_qubit_gate::gates::{H, T};
+use single_qubit_gate::gates::{H, T, X, Z};
 use two_qubit_gate::gates::{controlled_u, CNOT};
 
 #[derive(Clone, PartialEq)]
@@ -118,9 +118,32 @@ impl State {
         std::mem::swap(&mut self.0, &mut temp_state.0);
     }
 
-    pub fn diffuse(mut self, index: usize) -> Self {
-        self.0[2_usize.pow(index as u32)] = -self.0[2_usize.pow(index as u32)];
-        self
+    pub fn grover_diffusion(
+        &mut self,
+        qubits_to_be_diffused: Vec<usize>,
+        ancillas: Vec<usize>,
+        temp_state: &mut State,
+    ) {
+        assert_eq!(qubits_to_be_diffused.len(), ancillas.len() + 1);
+        assert!(qubits_to_be_diffused.len() > 2);
+
+        for &idx in qubits_to_be_diffused.iter() {
+            self.apply_single_qubit_gate(idx, &H, temp_state);
+            self.apply_single_qubit_gate(idx, &X, temp_state);
+        }
+
+        self.apply_n_controlled_gate(
+            &qubits_to_be_diffused[1..],
+            &ancillas,
+            qubits_to_be_diffused[0],
+            &Z,
+            temp_state,
+        );
+
+        for &idx in qubits_to_be_diffused.iter() {
+            self.apply_single_qubit_gate(idx, &X, temp_state);
+            self.apply_single_qubit_gate(idx, &H, temp_state);
+        }
     }
 
     pub fn apply_toffoli_gate(
@@ -163,14 +186,16 @@ impl State {
         self.apply_two_qubit_gate(control_1, target, &controlled_root_u, temp_state);
     }
 
-    pub fn apply_n_controlled_gate(
+    pub fn apply_n_controlled_gate<T>(
         &mut self,
-        controllers: Vec<usize>,
-        ancillas: Vec<usize>,
+        controllers: T,
+        ancillas: T,
         target: usize,
         u: &SingleQubitGate,
         temp_state: &mut State,
-    ) {
+    ) where
+        T: std::ops::Deref<Target = [usize]>,
+    {
         assert_eq!(controllers.len(), ancillas.len() + 1);
         assert!(controllers.len() > 2);
 
@@ -624,13 +649,16 @@ mod tests {
             let control_2_bool = control_2 == 1;
             let target_bool = target == 1;
 
-            let expected_result = u32::from(target_bool ^ (control_0_bool & control_1_bool & control_2_bool));
+            let expected_result =
+                u32::from(target_bool ^ (control_0_bool & control_1_bool & control_2_bool));
 
-            let expected_state =
-                State::from_bit_str(&dbg!(format!("00{}{}{}{}", expected_result,control_2, control_1, control_0)))
-                    .unwrap();
+            let expected_state = State::from_bit_str(&dbg!(format!(
+                "00{}{}{}{}",
+                expected_result, control_2, control_1, control_0
+            )))
+            .unwrap();
 
-            state.apply_n_controlled_gate(vec![0,1,2],vec![4,5], 3, &X, &mut temp_state);
+            state.apply_n_controlled_gate(vec![0, 1, 2], vec![4, 5], 3, &X, &mut temp_state);
             assert!(dbg!(state).distance(&dbg!(expected_state)) < 1e-4);
         }
     }
