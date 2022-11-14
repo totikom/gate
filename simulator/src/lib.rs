@@ -164,7 +164,7 @@ impl State {
     }
 
     pub fn apply_n_controlled_gate(
-        mut self,
+        &mut self,
         controllers: Vec<usize>,
         ancillas: Vec<usize>,
         target: usize,
@@ -192,6 +192,7 @@ impl State {
         for (ancilla_pair, control) in ancillas.windows(2).rev().zip(controllers.iter().rev()) {
             self.apply_toffoli_gate(*control, ancilla_pair[0], ancilla_pair[1], temp_state);
         }
+        self.apply_toffoli_gate(controllers[0], controllers[1], ancillas[0], temp_state);
     }
 
     pub fn norm(&self) -> f32 {
@@ -602,6 +603,35 @@ mod tests {
 
             state.apply_controlled_controlled_gate(0, 1, 2, &SX, &mut temp_state);
             assert!(state.distance(&expected_state) < 1e-4);
+        }
+    }
+
+    #[test]
+    fn cccnot() {
+        let mut temp_state = State::from_bit_str("000000").unwrap();
+        for i in 0..15 {
+            let control_0 = i & 1;
+            let control_1 = (i & 2) >> 1;
+            let control_2 = (i & 4) >> 2;
+            let target = (i & 8) >> 3;
+            let mut state = State::from_bit_str(&dbg!(format!(
+                "00{}{}{}{}",
+                target, control_2, control_1, control_0
+            )))
+            .unwrap();
+            let control_0_bool = control_0 == 1;
+            let control_1_bool = control_1 == 1;
+            let control_2_bool = control_2 == 1;
+            let target_bool = target == 1;
+
+            let expected_result = u32::from(target_bool ^ (control_0_bool & control_1_bool & control_2_bool));
+
+            let expected_state =
+                State::from_bit_str(&dbg!(format!("00{}{}{}{}", expected_result,control_2, control_1, control_0)))
+                    .unwrap();
+
+            state.apply_n_controlled_gate(vec![0,1,2],vec![4,5], 3, &X, &mut temp_state);
+            assert!(dbg!(state).distance(&dbg!(expected_state)) < 1e-4);
         }
     }
 
