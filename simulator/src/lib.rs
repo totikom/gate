@@ -331,7 +331,7 @@ mod tests {
             let expected_state = State::from_bit_str("011").unwrap();
 
             assert_eq!(state, expected_state);
-            
+
             let mut state = State::from_bit_str("000").unwrap();
 
             state.apply_single_qubit_gate(1, &X, &mut temp_state);
@@ -421,51 +421,48 @@ mod tests {
 
         #[test]
         fn cnot() {
-            let state = State::from_bit_str("00").unwrap();
+            let mut state = State::from_bit_str("00").unwrap();
+            let mut temp_state = State::from_bit_str("00").unwrap();
 
-            let result = state.apply_two_qubit_gate(0, 1, &CNOT);
+            state.apply_two_qubit_gate(0, 1, &CNOT, &mut temp_state);
 
             let expected_state = State::from_bit_str("00").unwrap();
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
 
-            let state = State::from_bit_str("01").unwrap();
+            let mut state = State::from_bit_str("01").unwrap();
 
-            let result = state.apply_two_qubit_gate(0, 1, &CNOT);
+            state.apply_two_qubit_gate(0, 1, &CNOT, &mut temp_state);
 
             let expected_state = State::from_bit_str("11").unwrap();
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
 
-            let state = State::from_bit_str("10").unwrap();
+            let mut state = State::from_bit_str("10").unwrap();
 
-            let result = state.apply_two_qubit_gate(0, 1, &CNOT);
+            state.apply_two_qubit_gate(0, 1, &CNOT, &mut temp_state);
 
             let expected_state = State::from_bit_str("10").unwrap();
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
 
-            let state = State::from_bit_str("11").unwrap();
+            let mut state = State::from_bit_str("11").unwrap();
 
-            let result = state.apply_two_qubit_gate(0, 1, &CNOT);
+            state.apply_two_qubit_gate(0, 1, &CNOT, &mut temp_state);
 
             let expected_state = State::from_bit_str("01").unwrap();
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
         }
 
         #[test]
         fn suren() {
-            let state = State(vec![
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let mut state = State::from_bit_str("00").unwrap();
+            let mut temp_state = State::from_bit_str("00").unwrap();
 
             let suren_gate = suren_gate(0.0, 1.0, 2.0, 3.0);
 
-            let result = state.apply_two_qubit_gate(1, 0, &suren_gate);
+            state.apply_two_qubit_gate(1, 0, &suren_gate, &mut temp_state);
 
             let expected_state = State(vec![
                 Complex32::new(1.0, 0.0),
@@ -474,16 +471,16 @@ mod tests {
                 Complex32::new(0.0, 0.0),
             ]);
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
 
-            let state = State(vec![
+            let mut state = State(vec![
                 Complex32::new(0.0, 0.0),
                 Complex32::new(1.0, 0.0),
                 Complex32::new(0.0, 0.0),
                 Complex32::new(0.0, 0.0),
             ]);
 
-            let result = state.apply_two_qubit_gate(1, 0, &suren_gate);
+            state.apply_two_qubit_gate(1, 0, &suren_gate, &mut temp_state);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -492,16 +489,16 @@ mod tests {
                 Complex32::new(0.0, 0.0),
             ]);
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
 
-            let state = State(vec![
+            let mut state = State(vec![
                 Complex32::new(0.0, 0.0),
                 Complex32::new(0.0, 0.0),
                 Complex32::new(1.0, 0.0),
                 Complex32::new(0.0, 0.0),
             ]);
 
-            let result = state.apply_two_qubit_gate(1, 0, &suren_gate);
+            state.apply_two_qubit_gate(1, 0, &suren_gate, &mut temp_state);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -510,16 +507,16 @@ mod tests {
                 Complex32::new(0.0, 0.0),
             ]);
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
 
-            let state = State(vec![
+            let mut state = State(vec![
                 Complex32::new(0.0, 0.0),
                 Complex32::new(0.0, 0.0),
                 Complex32::new(0.0, 0.0),
                 Complex32::new(1.0, 0.0),
             ]);
 
-            let result = state.apply_two_qubit_gate(1, 0, &suren_gate);
+            state.apply_two_qubit_gate(1, 0, &suren_gate, &mut temp_state);
 
             let expected_state = State(vec![
                 Complex32::new(0.0, 0.0),
@@ -528,235 +525,82 @@ mod tests {
                 Complex32::new(3.0_f32.cos(), 3.0_f32.sin()),
             ]);
 
-            assert_eq!(result, expected_state);
+            assert_eq!(state, expected_state);
         }
 
         #[test]
         #[ignore]
         fn test_suren_circuit() {
-            let state = State(vec![
-                Complex32::new(1.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-                Complex32::new(0.0, 0.0),
-            ]);
+            let mut state = State::from_bit_str("0000").unwrap();
+            let mut temp_state = State::from_bit_str("0000").unwrap();
 
             let r_y = r_y(FRAC_PI_3);
             let r_x = r_x(PI * SQRT_2);
             let suren_gate = suren_gate(0.0, 1.0, 2.0, 3.0);
 
-            let result = state
-                .apply_two_qubit_gate(0, 1, &CNOT)
-                .apply_single_qubit_gate(2, &Y)
-                .apply_two_qubit_gate(1, 2, &CNOT)
-                .apply_single_qubit_gate(2, &r_x)
-                .apply_single_qubit_gate(3, &r_y)
-                .apply_two_qubit_gate(0, 3, &CNOT)
-                .apply_single_qubit_gate(1, &X)
-                .apply_single_qubit_gate(3, &T)
-                .apply_single_qubit_gate(0, &H)
-                .apply_single_qubit_gate(3, &H)
-                .apply_two_qubit_gate(3, 0, &suren_gate)
-                .apply_single_qubit_gate(3, &H)
-                .apply_single_qubit_gate(0, &H);
+            state.apply_two_qubit_gate(0, 1, &CNOT, &mut temp_state);
+            state.apply_single_qubit_gate(2, &Y, &mut temp_state);
+            state.apply_two_qubit_gate(1, 2, &CNOT, &mut temp_state);
+            state.apply_single_qubit_gate(2, &r_x, &mut temp_state);
+            state.apply_single_qubit_gate(3, &r_y, &mut temp_state);
+            state.apply_two_qubit_gate(0, 3, &CNOT, &mut temp_state);
+            state.apply_single_qubit_gate(1, &X, &mut temp_state);
+            state.apply_single_qubit_gate(3, &T, &mut temp_state);
+            state.apply_single_qubit_gate(0, &H, &mut temp_state);
+            state.apply_single_qubit_gate(3, &H, &mut temp_state);
+            state.apply_two_qubit_gate(3, 0, &suren_gate, &mut temp_state);
+            state.apply_single_qubit_gate(3, &H, &mut temp_state);
+            state.apply_single_qubit_gate(0, &H, &mut temp_state);
 
-            println!("{}", &result);
+            println!("{}", &state);
         }
     }
 
-    mod toffoli {
-        use super::*;
+    #[test]
+    fn toffoli() {
+        let mut temp_state = State::from_bit_str("000").unwrap();
+        for i in 0..7 {
+            let control_0 = i & 1;
+            let control_1 = (i & 2) >> 1;
+            let target = (i & 4) >> 2;
+            let mut state =
+                State::from_bit_str(&format!("{}{}{}", target, control_1, control_0)).unwrap();
+            let control_0_bool = control_0 == 1;
+            let control_1_bool = control_1 == 1;
+            let target_bool = target == 1;
 
-        #[test]
-        fn state_000() {
-            let state = State::from_bit_str("000").unwrap();
+            let expected_result = u32::from(target_bool ^ (control_0_bool & control_1_bool));
 
-            let result = state.apply_toffoli_gate(0, 1, 2);
+            let expected_state =
+                State::from_bit_str(&format!("{}{}{}", expected_result, control_1, control_0))
+                    .unwrap();
 
-            let expected_state = State::from_bit_str("000").unwrap();
-
-            assert!(result.distance(&expected_state) < 1e-4);
-        }
-
-        #[test]
-        fn state_001() {
-            let state = State::from_bit_str("001").unwrap();
-
-            let result = state.apply_toffoli_gate(0, 1, 2);
-
-            let expected_state = State::from_bit_str("001").unwrap();
-
-            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
-        }
-
-        #[test]
-        fn state_010() {
-            let state = State::from_bit_str("010").unwrap();
-
-            let result = state.apply_toffoli_gate(0, 1, 2);
-
-            let expected_state = State::from_bit_str("010").unwrap();
-
-            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
-        }
-
-        #[test]
-        fn state_011() {
-            let state = State::from_bit_str("011").unwrap();
-
-            let result = state.apply_toffoli_gate(0, 1, 2);
-
-            let expected_state = State::from_bit_str("111").unwrap();
-
-            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
-        }
-
-        #[test]
-        fn state_100() {
-            let state = State::from_bit_str("100").unwrap();
-
-            let result = state.apply_toffoli_gate(0, 1, 2);
-
-            let expected_state = State::from_bit_str("100").unwrap();
-
-            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
-        }
-
-        #[test]
-        fn state_101() {
-            let state = State::from_bit_str("101").unwrap();
-
-            let result = state.apply_toffoli_gate(0, 1, 2);
-
-            let expected_state = State::from_bit_str("101").unwrap();
-
-            assert!(result.distance(&expected_state) < 1e-4);
-        }
-
-        #[test]
-        fn state_110() {
-            let state = State::from_bit_str("110").unwrap();
-
-            let result = state.apply_toffoli_gate(0, 1, 2);
-
-            let expected_state = State::from_bit_str("110").unwrap();
-
-            assert!(result.distance(&expected_state) < 1e-4);
-        }
-
-        #[test]
-        fn state_111() {
-            let state = State::from_bit_str("111").unwrap();
-
-            let result = state.apply_toffoli_gate(0, 1, 2);
-
-            let expected_state = State::from_bit_str("011").unwrap();
-
-            assert!(result.distance(&expected_state) < 1e-4);
+            state.apply_toffoli_gate(0, 1, 2, &mut temp_state);
+            assert!(state.distance(&expected_state) < 1e-4);
         }
     }
 
-    mod ccnot {
-        use super::*;
+    #[test]
+    fn ccnot() {
+        let mut temp_state = State::from_bit_str("000").unwrap();
+        for i in 0..7 {
+            let control_0 = i & 1;
+            let control_1 = (i & 2) >> 1;
+            let target = (i & 4) >> 2;
+            let mut state =
+                State::from_bit_str(&format!("{}{}{}", target, control_1, control_0)).unwrap();
+            let control_0_bool = control_0 == 1;
+            let control_1_bool = control_1 == 1;
+            let target_bool = target == 1;
 
-        #[test]
-        fn state_000() {
-            let state = State::from_bit_str("000").unwrap();
+            let expected_result = u32::from(target_bool ^ (control_0_bool & control_1_bool));
 
-            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
+            let expected_state =
+                State::from_bit_str(&format!("{}{}{}", expected_result, control_1, control_0))
+                    .unwrap();
 
-            let expected_state = State::from_bit_str("000").unwrap();
-
-            assert!(result.distance(&expected_state) < 1e-4);
-        }
-
-        #[test]
-        fn state_001() {
-            let state = State::from_bit_str("001").unwrap();
-
-            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
-
-            let expected_state = State::from_bit_str("001").unwrap();
-
-            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
-        }
-
-        #[test]
-        fn state_010() {
-            let state = State::from_bit_str("010").unwrap();
-
-            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
-
-            let expected_state = State::from_bit_str("010").unwrap();
-
-            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
-        }
-
-        #[test]
-        fn state_011() {
-            let state = State::from_bit_str("011").unwrap();
-
-            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
-
-            let expected_state = State::from_bit_str("111").unwrap();
-
-            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
-        }
-
-        #[test]
-        fn state_100() {
-            let state = State::from_bit_str("100").unwrap();
-
-            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
-
-            let expected_state = State::from_bit_str("100").unwrap();
-
-            assert!(dbg!(result).distance(&dbg!(expected_state)) < 1e-4);
-        }
-
-        #[test]
-        fn state_101() {
-            let state = State::from_bit_str("101").unwrap();
-
-            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
-
-            let expected_state = State::from_bit_str("101").unwrap();
-
-            assert!(result.distance(&expected_state) < 1e-4);
-        }
-
-        #[test]
-        fn state_110() {
-            let state = State::from_bit_str("110").unwrap();
-
-            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
-
-            let expected_state = State::from_bit_str("110").unwrap();
-
-            assert!(result.distance(&expected_state) < 1e-4);
-        }
-
-        #[test]
-        fn state_111() {
-            let state = State::from_bit_str("111").unwrap();
-
-            let result = state.apply_controlled_controlled_gate(0, 1, 2, &SX);
-
-            let expected_state = State::from_bit_str("011").unwrap();
-
-            assert!(result.distance(&expected_state) < 1e-4);
+            state.apply_controlled_controlled_gate(0, 1, 2, &SX, &mut temp_state);
+            assert!(state.distance(&expected_state) < 1e-4);
         }
     }
 
@@ -815,28 +659,28 @@ mod tests {
         }
     }
 
-    #[test]
-    fn grover() {
-        let mut state = State::from_bit_str("0000000").unwrap();
-        //let mut state = State::from_br("00_0_0000").unwrap();
+    //#[test]
+    //fn grover() {
+    //let mut state = State::from_bit_str("0000000").unwrap();
+    ////let mut state = State::from_br("00_0_0000").unwrap();
 
-        for i in 0..5 {
-            state = state.apply_single_qubit_gate(i, &H);
-        }
+    //for i in 0..5 {
+    //state = state.apply_single_qubit_gate(i, &H);
+    //}
 
-        for _ in 0..2_usize.pow(2) {
-            state = state.apply_n_controlled_gate(vec![0, 1, 2], vec![5, 6], 3, &X);
+    //for _ in 0..2_usize.pow(2) {
+    //state = state.apply_n_controlled_gate(vec![0, 1, 2], vec![5, 6], 3, &X);
 
-            for i in 0..5 {
-                state = state.apply_single_qubit_gate(i, &H);
-            }
-            state = state.diffuse(2);
-            for i in 0..5 {
-                state = state.apply_single_qubit_gate(i, &H);
-            }
-        }
+    //for i in 0..5 {
+    //state = state.apply_single_qubit_gate(i, &H);
+    //}
+    //state = state.diffuse(2);
+    //for i in 0..5 {
+    //state = state.apply_single_qubit_gate(i, &H);
+    //}
+    //}
 
-        println!("{}", state);
-        todo!();
-    }
+    //println!("{}", state);
+    //todo!();
+    //}
 }
