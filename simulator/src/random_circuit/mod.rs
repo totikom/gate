@@ -27,7 +27,7 @@ impl RandomCircuitIter {
 }
 
 impl Iterator for RandomCircuitIter {
-    type Item = Block;
+    type Item = Block<Vec<usize>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.n_gates > 0 {

@@ -2,7 +2,10 @@ use super::{SingleQubitGate, TwoQubitGate};
 use std::fmt;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub enum Block {
+pub enum Block<T>
+where
+    T: std::ops::Deref<Target = [usize]>,
+{
     SingleQubitGate {
         qubit_idx: u64,
         gate: SingleQubitGate,
@@ -12,9 +15,30 @@ pub enum Block {
         target_qubit_idx: u64,
         gate: TwoQubitGate,
     },
+    ToffoliGate {
+        control_0_qubit_idx: u64,
+        control_1_qubit_idx: u64,
+        target_qubit_idx: u64,
+    },
+    CCGate {
+        control_0_qubit_idx: u64,
+        control_1_qubit_idx: u64,
+        target_qubit_idx: u64,
+        root_gate: SingleQubitGate,
+    },
+    NCGate {
+        controllers: T,
+        ancillas: T,
+        target: usize,
+        gate: SingleQubitGate,
+    },
+    GroverDiffusion {
+        diffusion_qubits: T,
+        ancillas: T,
+    },
 }
 
-impl fmt::Display for Block {
+impl<T: fmt::Debug + std::ops::Deref<Target = [usize]>> fmt::Display for Block<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Block::SingleQubitGate { qubit_idx, gate } => {
@@ -32,6 +56,53 @@ impl fmt::Display for Block {
                     control_qubit_idx, target_qubit_idx
                 )?;
                 write!(f, "{}", gate)
+            }
+            Block::ToffoliGate {
+                control_0_qubit_idx,
+                control_1_qubit_idx,
+                target_qubit_idx,
+            } => {
+                writeln!(
+                    f,
+                    "Toffoli gate controlled by {} and {} qubits, target on {}",
+                    control_0_qubit_idx, control_1_qubit_idx, target_qubit_idx,
+                )
+            }
+            Block::CCGate {
+                control_0_qubit_idx,
+                control_1_qubit_idx,
+                target_qubit_idx,
+                root_gate,
+            } => {
+                writeln!(
+                    f,
+                    "Twice-controlled qubit gate on {} qubit, controlled by {} and {}",
+                    target_qubit_idx, control_0_qubit_idx, control_1_qubit_idx
+                )?;
+                write!(f, "{}", root_gate)
+            }
+            Block::NCGate {
+                controllers,
+                ancillas,
+                target,
+                gate,
+            } => {
+                writeln!(
+                    f,
+                    "N-controlled gate on {} qubit, controlled by {:?}, ancillas are: {:?}",
+                    target, controllers, ancillas,
+                )?;
+                write!(f, "{}", gate)
+            }
+            Block::GroverDiffusion {
+                diffusion_qubits,
+                ancillas,
+            } => {
+                writeln!(
+                    f,
+                    "Grover diffusion {:?} qubits, ancillas are: {:?}",
+                    diffusion_qubits, ancillas,
+                )
             }
         }
     }
@@ -57,7 +128,7 @@ mod tests {
     fn format_single() {
         let result = format!(
             "{}",
-            Block::SingleQubitGate {
+            Block::<Vec<usize>>::SingleQubitGate {
                 qubit_idx: 1,
                 gate: X
             }
@@ -69,7 +140,7 @@ mod tests {
     fn format_two() {
         let result = format!(
             "{}",
-            Block::TwoQubitGate {
+            Block::<Vec<usize>>::TwoQubitGate {
                 control_qubit_idx: 0,
                 target_qubit_idx: 1,
                 gate: CNOT,
