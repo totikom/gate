@@ -791,6 +791,9 @@ mod tests {
             println!("{} {}", i, state.scalar_product(&expected_state).abs());
         }
 
-        assert!(state.scalar_product(&expected_state).abs() > 0.98);
+        let theta = 2.0 * (1.0/16.0.sqrt()).asin();
+        let probabity = ((n as f32 + 0.5) * theta).sin().powi(2);
+
+        assert!(state.scalar_product(&expected_state).abs() >= probabity);
     }
 }
