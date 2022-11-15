@@ -33,15 +33,6 @@ impl State {
         Ok(Self(state))
     }
 
-    pub fn scalar_product(&self, rhs: &Self) -> Complex32 {
-        self.0
-            .iter()
-            .zip(rhs.0.iter())
-            .map(|(&x, &y)| x.conj() * y)
-            .reduce(|x, y| x + y)
-            .unwrap()
-    }
-
     pub fn apply_single_qubit_gate(
         &mut self,
         index: usize,
@@ -127,12 +118,14 @@ impl State {
         std::mem::swap(&mut self.0, &mut temp_state.0);
     }
 
-    pub fn grover_diffusion(
+    pub fn grover_diffusion<T>(
         &mut self,
-        qubits_to_be_diffused: Vec<usize>,
-        ancillas: Vec<usize>,
+        qubits_to_be_diffused: T,
+        ancillas: T,
         temp_state: &mut State,
-    ) {
+    ) where
+        T: std::ops::Deref<Target = [usize]>,
+    {
         assert_eq!(qubits_to_be_diffused.len(), ancillas.len() + 2);
         assert!(qubits_to_be_diffused.len() > 2);
 
@@ -230,11 +223,7 @@ impl State {
     }
 
     pub fn norm(&self) -> f32 {
-        self.0
-            .iter()
-            .map(|x| x.norm())
-            .reduce(|x, y| x + y)
-            .unwrap()
+        self.scalar_product(self).norm()
     }
 
     pub fn distance(&self, rhs: &Self) -> f32 {
@@ -246,9 +235,19 @@ impl State {
             .unwrap()
     }
 
-    pub fn evaluate_circuit<I>(mut self, circuit: I, temp_state: &mut State)
+    pub fn scalar_product(&self, rhs: &Self) -> Complex32 {
+        self.0
+            .iter()
+            .zip(rhs.0.iter())
+            .map(|(&x, &y)| x.conj() * y)
+            .reduce(|x, y| x + y)
+            .unwrap()
+    }
+
+    pub fn evaluate_circuit<I, T>(mut self, circuit: I, temp_state: &mut State)
     where
-        I: Iterator<Item = Block>,
+        I: Iterator<Item = Block<T>>,
+        T: std::ops::Deref<Target = [usize]>,
     {
         for gate in circuit {
             self.evaluate_gate(&gate, temp_state);
@@ -256,9 +255,10 @@ impl State {
     }
 
     #[cfg(feature = "indicatif")]
-    pub fn evaluate_circuit_progress_bar<I>(&mut self, circuit: I, temp_state: &mut State)
+    pub fn evaluate_circuit_progress_bar<I, T>(&mut self, circuit: I, temp_state: &mut State)
     where
-        I: Iterator<Item = Block> + std::iter::ExactSizeIterator,
+        I: Iterator<Item = Block<T>> + std::iter::ExactSizeIterator,
+        T: std::ops::Deref<Target = [usize]>,
     {
         for gate in circuit.progress().with_style(
             ProgressStyle::with_template(
@@ -271,7 +271,10 @@ impl State {
         }
     }
 
-    fn evaluate_gate<'a>(&mut self, gate: &'a Block, temp_state: &mut State) {
+    fn evaluate_gate<'a, T>(&mut self, gate: &'a Block<T>, temp_state: &mut State)
+    where
+        T: std::ops::Deref<Target = [usize]>,
+    {
         match gate {
             Block::SingleQubitGate { gate, qubit_idx } => {
                 self.apply_single_qubit_gate(*qubit_idx as usize, gate, temp_state)
@@ -308,6 +311,22 @@ impl State {
                 root_gate,
                 temp_state,
             ),
+            Block::NCGate {
+                controllers,
+                ancillas,
+                target,
+                gate,
+            } => self.apply_n_controlled_gate(
+                controllers.deref(),
+                ancillas.deref(),
+                *target,
+                gate,
+                temp_state,
+            ),
+            Block::GroverDiffusion {
+                diffusion_qubits,
+                ancillas,
+            } => self.grover_diffusion(diffusion_qubits.deref(), ancillas.deref(), temp_state),
         }
     }
 }
