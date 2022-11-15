@@ -286,6 +286,28 @@ impl State {
                 gate,
                 temp_state,
             ),
+            Block::ToffoliGate {
+                control_0_qubit_idx,
+                control_1_qubit_idx,
+                target_qubit_idx,
+            } => self.apply_toffoli_gate(
+                *control_0_qubit_idx as usize,
+                *control_1_qubit_idx as usize,
+                *target_qubit_idx as usize,
+                temp_state,
+            ),
+            Block::CCGate {
+                control_0_qubit_idx,
+                control_1_qubit_idx,
+                target_qubit_idx,
+                root_gate,
+            } => self.apply_controlled_controlled_gate(
+                *control_0_qubit_idx as usize,
+                *control_1_qubit_idx as usize,
+                *target_qubit_idx as usize,
+                root_gate,
+                temp_state,
+            ),
         }
     }
 }

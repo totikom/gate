@@ -12,6 +12,19 @@ pub enum Block {
         target_qubit_idx: u64,
         gate: TwoQubitGate,
     },
+    ToffoliGate {
+        control_0_qubit_idx: u64,
+        control_1_qubit_idx: u64,
+        target_qubit_idx: u64,
+    },
+    CCGate {
+        control_0_qubit_idx: u64,
+        control_1_qubit_idx: u64,
+        target_qubit_idx: u64,
+        root_gate: SingleQubitGate,
+    },
+    //NCGate{},
+    //GroverDiffusion
 }
 
 impl fmt::Display for Block {
@@ -32,6 +45,30 @@ impl fmt::Display for Block {
                     control_qubit_idx, target_qubit_idx
                 )?;
                 write!(f, "{}", gate)
+            }
+            Block::ToffoliGate {
+                control_0_qubit_idx,
+                control_1_qubit_idx,
+                target_qubit_idx,
+            } => {
+                writeln!(
+                    f,
+                    "Toffoli gate controlled by {} and {} qubits, target on {}",
+                    control_0_qubit_idx, control_1_qubit_idx, target_qubit_idx,
+                )
+            }
+            Block::CCGate {
+                control_0_qubit_idx,
+                control_1_qubit_idx,
+                target_qubit_idx,
+                root_gate,
+            } => {
+                writeln!(
+                    f,
+                    "Twice-controlled qubit gate on {} qubit, controlled by {} and {}",
+                    target_qubit_idx, control_0_qubit_idx, control_1_qubit_idx
+                )?;
+                write!(f, "{}", root_gate)
             }
         }
     }
