@@ -153,14 +153,15 @@ impl State {
         &mut self,
         search_qubits: T,
         ancillas: T,
+        M: usize,
         oracle: O,
         temp_state: &mut State,
     ) where
         T: std::ops::Deref<Target = [usize]>,
         O: Iterator<Item = Block<T>> + Clone,
     {
-        let n =
-            (FRAC_PI_4 * (2_u32.pow(search_qubits.len() as u32) as f32).sqrt()).floor() as usize;
+        let N = 2_u32.pow(search_qubits.len() as u32);
+        let n = (FRAC_PI_4 * (N as f32 /M as f32).sqrt()).floor() as usize;
 
         for i in search_qubits.deref() {
             self.apply_single_qubit_gate(*i, &H, temp_state);
@@ -816,9 +817,12 @@ mod tests {
             println!("{} {}", i, state.scalar_product(&expected_state).abs());
         }
 
-        let theta = 2.0 * (1.0 / 16.0.sqrt()).asin();
+        let theta = (2.0 * 15.0.sqrt() / 16.0).asin();
         let probabity = ((n as f32 + 0.5) * theta).sin().powi(2);
 
-        assert!(state.scalar_product(&expected_state).abs() >= probabity);
+        assert!(
+            (dbg!(state.scalar_product(&expected_state).abs().powi(2)) - dbg!(probabity)).abs()
+                <= 1e-3
+        );
     }
 }
