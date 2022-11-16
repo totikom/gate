@@ -10,6 +10,7 @@ pub mod block;
 pub mod random_circuit;
 pub mod single_qubit_gate;
 pub mod two_qubit_gate;
+mod ops;
 
 pub use block::Block;
 pub use single_qubit_gate::SingleQubitGate;
@@ -161,7 +162,7 @@ impl State {
         O: Iterator<Item = Block<T>> + Clone,
     {
         let N = 2_u32.pow(search_qubits.len() as u32);
-        let n = (FRAC_PI_4 * (N as f32 /M as f32).sqrt()).floor() as usize;
+        let n = (FRAC_PI_4 * (N as f32 / M as f32).sqrt()).floor() as usize;
 
         for i in search_qubits.deref() {
             self.apply_single_qubit_gate(*i, &H, temp_state);
@@ -357,29 +358,13 @@ impl State {
     }
 }
 
-impl fmt::Display for State {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (idx, amp) in self.0.iter().enumerate() {
-            let len = self.0.len().ilog2() as usize;
-            writeln!(f, "|{:0len$b}> ({}{:+}i)", idx, amp.re, amp.im)?;
-        }
-        Ok(())
-    }
-}
-
-impl fmt::Debug for State {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::single_qubit_gate::gates::*;
     use crate::two_qubit_gate::gates::*;
     use num_complex::ComplexFloat;
-    use std::f32::consts::{FRAC_PI_3, PI, SQRT_2};
+    use std::f32::consts::{FRAC_1_SQRT_2, FRAC_PI_3, PI, SQRT_2};
 
     mod single_qubit_gate {
         use super::*;
@@ -796,7 +781,7 @@ mod tests {
     }
 
     #[test]
-    fn grover() {
+    fn grover_naive() {
         let expected_state = State::from_bit_str("001111").unwrap();
         let mut state = State::from_bit_str("000000").unwrap();
         let mut temp_state = State::from_bit_str("000000").unwrap();
@@ -819,6 +804,39 @@ mod tests {
 
         let theta = (2.0 * 15.0.sqrt() / 16.0).asin();
         let probabity = ((n as f32 + 0.5) * theta).sin().powi(2);
+
+        assert!(
+            (dbg!(state.scalar_product(&expected_state).abs().powi(2)) - dbg!(probabity)).abs()
+                <= 1e-3
+        );
+    }
+
+    #[test]
+    fn grover() {
+        let expected_state = State::from_bit_str("001111").unwrap();
+        let mut state = State::from_bit_str("000000").unwrap();
+        let mut temp_state = State::from_bit_str("000000").unwrap();
+        //                                  00_0000
+        //                                  2 ancillas
+        //                                  4 qubits
+
+        let oracle = vec![Block::NCGate {
+            controllers: vec![0, 1, 2],
+            ancillas: vec![4, 5],
+            target: 3,
+            gate: Z,
+        }];
+
+        state.apply_grover_algorithm(
+            vec![0, 1, 2, 3],
+            vec![4, 5],
+            1,
+            oracle.into_iter(),
+            &mut temp_state,
+        );
+
+        let theta = (2.0 * 15.0.sqrt() / 16.0).asin();
+        let probabity = ((3 as f32 + 0.5) * theta).sin().powi(2);
 
         assert!(
             (dbg!(state.scalar_product(&expected_state).abs().powi(2)) - dbg!(probabity)).abs()
