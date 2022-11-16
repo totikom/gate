@@ -27,7 +27,9 @@ fn random_circuit(c: &mut Criterion) {
     };
     let mut group = c.benchmark_group("rand");
 
-    group.measurement_time(std::time::Duration::new(10,0)).sample_size(100);
+    group
+        .measurement_time(std::time::Duration::new(10, 0))
+        .sample_size(100);
 
     group.bench_with_input(
         BenchmarkId::new("random_circuit", "with 4 qubits and 10 gates"),

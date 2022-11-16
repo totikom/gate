@@ -2,6 +2,7 @@
 #[cfg(feature = "indicatif")]
 use indicatif::{ProgressIterator, ProgressStyle};
 use num_complex::Complex32;
+use std::f32::consts::FRAC_PI_4;
 
 use std::fmt;
 
@@ -148,6 +149,30 @@ impl State {
         }
     }
 
+    pub fn apply_grover_algorithm<T, O>(
+        &mut self,
+        search_qubits: T,
+        ancillas: T,
+        oracle: O,
+        temp_state: &mut State,
+    ) where
+        T: std::ops::Deref<Target = [usize]>,
+        O: Iterator<Item = Block<T>> + Clone,
+    {
+        let n =
+            (FRAC_PI_4 * (2_u32.pow(search_qubits.len() as u32) as f32).sqrt()).floor() as usize;
+
+        for i in search_qubits.deref() {
+            self.apply_single_qubit_gate(*i, &H, temp_state);
+        }
+
+        for _ in 0..n {
+            self.evaluate_circuit(oracle.clone(), temp_state);
+
+            self.grover_diffusion(search_qubits.deref(), ancillas.deref(), temp_state);
+        }
+    }
+
     pub fn apply_toffoli_gate(
         &mut self,
         control_1: usize,
@@ -244,7 +269,7 @@ impl State {
             .unwrap()
     }
 
-    pub fn evaluate_circuit<I, T>(mut self, circuit: I, temp_state: &mut State)
+    pub fn evaluate_circuit<I, T>(&mut self, circuit: I, temp_state: &mut State)
     where
         I: Iterator<Item = Block<T>>,
         T: std::ops::Deref<Target = [usize]>,
@@ -353,7 +378,7 @@ mod tests {
     use crate::single_qubit_gate::gates::*;
     use crate::two_qubit_gate::gates::*;
     use num_complex::ComplexFloat;
-    use std::f32::consts::{FRAC_PI_3, FRAC_PI_4, PI, SQRT_2};
+    use std::f32::consts::{FRAC_PI_3, PI, SQRT_2};
 
     mod single_qubit_gate {
         use super::*;
@@ -791,7 +816,7 @@ mod tests {
             println!("{} {}", i, state.scalar_product(&expected_state).abs());
         }
 
-        let theta = 2.0 * (1.0/16.0.sqrt()).asin();
+        let theta = 2.0 * (1.0 / 16.0.sqrt()).asin();
         let probabity = ((n as f32 + 0.5) * theta).sin().powi(2);
 
         assert!(state.scalar_product(&expected_state).abs() >= probabity);
