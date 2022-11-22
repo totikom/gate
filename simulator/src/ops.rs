@@ -41,4 +41,3 @@ impl fmt::Debug for State {
         write!(f, "{}", self)
     }
 }
-

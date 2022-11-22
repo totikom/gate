@@ -4,13 +4,11 @@ use indicatif::{ProgressIterator, ProgressStyle};
 use num_complex::Complex32;
 use std::f32::consts::FRAC_PI_4;
 
-use std::fmt;
-
 pub mod block;
+mod ops;
 pub mod random_circuit;
 pub mod single_qubit_gate;
 pub mod two_qubit_gate;
-mod ops;
 
 pub use block::Block;
 pub use single_qubit_gate::SingleQubitGate;
@@ -835,12 +833,66 @@ mod tests {
             &mut temp_state,
         );
 
-        let theta = (2.0 * 15.0.sqrt() / 16.0).asin();
-        let probabity = ((3 as f32 + 0.5) * theta).sin().powi(2);
+        let N = 2.0_f32.powi(4);
+        let M = 1.0;
+        let k = (FRAC_PI_4 * (N / M).sqrt()).floor();
+        let probabity = expected_probability(N, M, k);
 
         assert!(
             (dbg!(state.scalar_product(&expected_state).abs().powi(2)) - dbg!(probabity)).abs()
                 <= 1e-3
         );
+    }
+
+    #[test]
+    #[ignore]
+    fn grover_2_answers() {
+        let expected_state_0 = State::from_bit_str("00011110").unwrap();
+        let expected_state_1 = State::from_bit_str("00011111").unwrap();
+        let expected_state = (expected_state_1 + expected_state_0) * FRAC_1_SQRT_2;
+
+        let mut state = State::from_bit_str("00000000").unwrap();
+        let mut temp_state = State::from_bit_str("00000000").unwrap();
+        //                                  000_00000
+        //                                  3 ancillas
+        //                                  5 qubits
+
+        let oracle = vec![Block::NCGate {
+            controllers: vec![1, 2, 3],
+            ancillas: vec![5, 6],
+            target: 4,
+            gate: Z,
+        }];
+
+        state.apply_grover_algorithm(
+            vec![0, 1, 2, 3, 4],
+            vec![5, 6, 7],
+            2,
+            oracle.into_iter(),
+            &mut temp_state,
+        );
+
+        //dbg!(&state);
+        //dbg!(&expected_state);
+
+        let N = 2.0_f32.powi(5);
+        let M = 2.0;
+        let k = (FRAC_PI_4 * (N / M).sqrt()).floor();
+        let probabity = expected_probability(N, M, k);
+
+        for i in 0..k as usize + 5 {
+            print!("{} ", expected_probability(N, M, i as f32));
+        }
+        println!();
+
+        assert!(
+            (dbg!(state.scalar_product(&expected_state).abs().powi(2)) - dbg!(probabity)).abs()
+                <= 1e-3
+        );
+    }
+
+    fn expected_probability(n_variants: f32, m_answers: f32, k_iterations: f32) -> f32 {
+        let theta = (2.0 * (m_answers * (n_variants - m_answers).sqrt()) / n_variants).asin();
+        ((2.0 * k_iterations + 1.0) / 2.0 * theta).sin().powi(2)
     }
 }

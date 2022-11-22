@@ -49,7 +49,10 @@ pub const SX: SingleQubitGate = SingleQubitGate([
 
 pub const SZ: SingleQubitGate = SingleQubitGate([
     [Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)],
-    [Complex32::new(0.0, 0.0), Complex32::new(FRAC_1_SQRT_2, FRAC_1_SQRT_2)],
+    [
+        Complex32::new(0.0, 0.0),
+        Complex32::new(FRAC_1_SQRT_2, FRAC_1_SQRT_2),
+    ],
 ]);
 
 pub fn r_x(theta: f32) -> SingleQubitGate {
