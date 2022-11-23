@@ -27,7 +27,7 @@ impl State {
 
     pub fn from_bit_str(state_str: &str) -> Result<Self, std::num::ParseIntError> {
         let mut state = vec![Complex32::new(0.0, 0.0); 2_usize.pow(state_str.len() as u32)];
-        let index = usize::from_str_radix(state_str, 2)?;
+        let index = usize::from_str_radix(&state_str.replace(&[' ', '_'], ""), 2)?;
 
         state[index] = Complex32::new(1.0, 0.0);
         Ok(Self(state))
@@ -811,9 +811,9 @@ mod tests {
 
     #[test]
     fn grover() {
-        let expected_state = State::from_bit_str("001111").unwrap();
-        let mut state = State::from_bit_str("000000").unwrap();
-        let mut temp_state = State::from_bit_str("000000").unwrap();
+        let expected_state = State::from_bit_str("00_1_111").unwrap();
+        let mut state = State::from_bit_str("00_0_000").unwrap();
+        let mut temp_state = State::from_bit_str("00_0_000").unwrap();
         //                                  00_0000
         //                                  2 ancillas
         //                                  4 qubits
@@ -845,17 +845,17 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
+    //#[ignore]
     fn grover_2_answers() {
-        let expected_state_0 = State::from_bit_str("00011110").unwrap();
-        let expected_state_1 = State::from_bit_str("00011111").unwrap();
+        let expected_state_0 = State::from_bit_str("000_1_111_0").unwrap();
+        let expected_state_1 = State::from_bit_str("000_1_111_1").unwrap();
         let expected_state = (expected_state_1 + expected_state_0) * FRAC_1_SQRT_2;
 
-        let mut state = State::from_bit_str("00000000").unwrap();
-        let mut temp_state = State::from_bit_str("00000000").unwrap();
-        //                                  000_00000
-        //                                  3 ancillas
-        //                                  5 qubits
+        let mut state = State::from_bit_str("000_0_000_0").unwrap();
+        let mut temp_state = State::from_bit_str("000_0_000_0").unwrap();
+        //                                  00_0000
+        //                                  2 ancillas
+        //                                  4 qubits
 
         let oracle = vec![Block::NCGate {
             controllers: vec![1, 2, 3],
@@ -872,17 +872,60 @@ mod tests {
             &mut temp_state,
         );
 
-        //dbg!(&state);
-        //dbg!(&expected_state);
-
         let N = 2.0_f32.powi(5);
         let M = 2.0;
         let k = (FRAC_PI_4 * (N / M).sqrt()).floor();
         let probabity = expected_probability(N, M, k);
 
-        for i in 0..k as usize + 5 {
-            print!("{} ", expected_probability(N, M, i as f32));
+        for i  in 0..10 {
+            print!("{} ",  expected_probability(N, M, i as f32));
         }
+
+        println!();
+
+        assert!(
+            (dbg!(state.scalar_product(&expected_state).abs().powi(2)) - dbg!(probabity)).abs()
+                <= 1e-3
+        );
+    }
+
+    #[test]
+    //#[ignore]
+    fn grover_2_answers_6q() {
+        let expected_state_0 = State::from_bit_str("000_1_1111_0").unwrap();
+        let expected_state_1 = State::from_bit_str("000_1_1111_1").unwrap();
+        let expected_state = (expected_state_1 + expected_state_0) * FRAC_1_SQRT_2;
+
+        let mut state = State::from_bit_str("000_0_0000_0").unwrap();
+        let mut temp_state = State::from_bit_str("000_0_0000_0").unwrap();
+        //                                  00_0000
+        //                                  2 ancillas
+        //                                  4 qubits
+
+        let oracle = vec![Block::NCGate {
+            controllers: vec![1, 2, 3, 4],
+            ancillas: vec![6, 7, 8],
+            target: 5,
+            gate: Z,
+        }];
+
+        state.apply_grover_algorithm(
+            vec![0, 1, 2, 3, 4, 5],
+            vec![6, 7, 8, 9],
+            2,
+            oracle.into_iter(),
+            &mut temp_state,
+        );
+
+        let N = 2.0_f32.powi(6);
+        let M = 2.0;
+        let k = (FRAC_PI_4 * (N / M).sqrt()).floor();
+        let probabity = expected_probability(N, M, k);
+
+        for i  in 0..10 {
+            print!("{} ",  expected_probability(N, M, i as f32));
+        }
+
         println!();
 
         assert!(
