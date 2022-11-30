@@ -877,8 +877,8 @@ mod tests {
         let k = (FRAC_PI_4 * (N / M).sqrt()).floor();
         let probabity = expected_probability(N, M, k);
 
-        for i  in 0..10 {
-            print!("{} ",  expected_probability(N, M, i as f32));
+        for i in 0..10 {
+            print!("{} ", expected_probability(N, M, i as f32));
         }
 
         println!();
@@ -898,9 +898,6 @@ mod tests {
 
         let mut state = State::from_bit_str("000_0_0000_0").unwrap();
         let mut temp_state = State::from_bit_str("000_0_0000_0").unwrap();
-        //                                  00_0000
-        //                                  2 ancillas
-        //                                  4 qubits
 
         let oracle = vec![Block::NCGate {
             controllers: vec![1, 2, 3, 4],
@@ -922,8 +919,56 @@ mod tests {
         let k = (FRAC_PI_4 * (N / M).sqrt()).floor();
         let probabity = expected_probability(N, M, k);
 
-        for i  in 0..10 {
-            print!("{} ",  expected_probability(N, M, i as f32));
+        for i in 0..10 {
+            print!("{} ", expected_probability(N, M, i as f32));
+        }
+
+        println!();
+
+        assert!(
+            (dbg!(state.scalar_product(&expected_state).abs().powi(2)) - dbg!(probabity)).abs()
+                <= 1e-3
+        );
+    }
+
+    #[test]
+    //#[ignore]
+    fn grover_4_answers() {
+        let expected_state_0 = State::from_bit_str("0000_1_111_00").unwrap();
+        let expected_state_1 = State::from_bit_str("0000_1_111_01").unwrap();
+        let expected_state_2 = State::from_bit_str("0000_1_111_10").unwrap();
+        let expected_state_3 = State::from_bit_str("0000_1_111_11").unwrap();
+        let expected_state =
+            (expected_state_0 + expected_state_1 + expected_state_2 + expected_state_3) * 0.5;
+
+        let mut state = State::from_bit_str("0000_0_000_00").unwrap();
+        let mut temp_state = State::from_bit_str("0000_0_000_00").unwrap();
+        //                                  00_0000
+        //                                  2 ancillas
+        //                                  4 qubits
+
+        let oracle = vec![Block::NCGate {
+            controllers: vec![2, 3, 4],
+            ancillas: vec![6, 7],
+            target: 5,
+            gate: Z,
+        }];
+
+        state.apply_grover_algorithm(
+            vec![0, 1, 2, 3, 4, 5],
+            vec![6, 7, 8, 9],
+            4,
+            oracle.into_iter(),
+            &mut temp_state,
+        );
+
+        let N = 2.0_f32.powi(6);
+        let M = 4.0;
+        let k = (FRAC_PI_4 * (N / M).sqrt()).floor();
+        let probabity = expected_probability(N, M, k);
+
+        for i in 0..k as usize + 5 {
+            print!("{} ", expected_probability(N, M, i as f32));
         }
 
         println!();
@@ -935,7 +980,7 @@ mod tests {
     }
 
     fn expected_probability(n_variants: f32, m_answers: f32, k_iterations: f32) -> f32 {
-        let theta = (2.0 * (m_answers * (n_variants - m_answers).sqrt()) / n_variants).asin();
+        let theta = (2.0 * (m_answers * (n_variants - m_answers)).sqrt() / n_variants).asin();
         ((2.0 * k_iterations + 1.0) / 2.0 * theta).sin().powi(2)
     }
 }
