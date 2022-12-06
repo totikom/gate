@@ -845,7 +845,6 @@ mod tests {
     }
 
     #[test]
-    //#[ignore]
     fn grover_2_answers() {
         let expected_state_0 = State::from_bit_str("000_1_111_0").unwrap();
         let expected_state_1 = State::from_bit_str("000_1_111_1").unwrap();
@@ -890,7 +889,6 @@ mod tests {
     }
 
     #[test]
-    //#[ignore]
     fn grover_2_answers_6q() {
         let expected_state_0 = State::from_bit_str("000_1_1111_0").unwrap();
         let expected_state_1 = State::from_bit_str("000_1_1111_1").unwrap();
@@ -932,7 +930,6 @@ mod tests {
     }
 
     #[test]
-    //#[ignore]
     fn grover_4_answers() {
         let expected_state_0 = State::from_bit_str("0000_1_111_00").unwrap();
         let expected_state_1 = State::from_bit_str("0000_1_111_01").unwrap();

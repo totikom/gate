@@ -35,16 +35,16 @@ impl Iterator for RandomCircuitIter {
             let parity = self.rand.next().unwrap();
             if parity % 2 == 1 {
                 let gate = random_2x2_unitary(&mut self.rand);
-                let qubit_idx = self.rand.next().unwrap() % self.n_qubits;
+                let qubit_idx = (self.rand.next().unwrap() % self.n_qubits) as usize;
                 Some(Block::SingleQubitGate { gate, qubit_idx })
             } else {
                 let gate = random_4x4_unitary(&mut self.rand);
 
-                let control_qubit_idx = self.rand.next().unwrap() % self.n_qubits;
-                let mut target_qubit_idx = self.rand.next().unwrap() % self.n_qubits;
+                let control_qubit_idx = (self.rand.next().unwrap() % self.n_qubits) as usize;
+                let mut target_qubit_idx = (self.rand.next().unwrap() % self.n_qubits) as usize;
 
                 while target_qubit_idx == control_qubit_idx {
-                    target_qubit_idx = self.rand.next().unwrap() % self.n_qubits;
+                    target_qubit_idx = (self.rand.next().unwrap() % self.n_qubits) as usize;
                 }
 
                 Some(Block::TwoQubitGate {

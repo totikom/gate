@@ -7,23 +7,23 @@ where
     T: std::ops::Deref<Target = [usize]>,
 {
     SingleQubitGate {
-        qubit_idx: u64,
+        qubit_idx: usize,
         gate: SingleQubitGate,
     },
     TwoQubitGate {
-        control_qubit_idx: u64,
-        target_qubit_idx: u64,
+        control_qubit_idx: usize,
+        target_qubit_idx: usize,
         gate: TwoQubitGate,
     },
     ToffoliGate {
-        control_0_qubit_idx: u64,
-        control_1_qubit_idx: u64,
-        target_qubit_idx: u64,
+        control_0_qubit_idx: usize,
+        control_1_qubit_idx: usize,
+        target_qubit_idx: usize,
     },
     CCGate {
-        control_0_qubit_idx: u64,
-        control_1_qubit_idx: u64,
-        target_qubit_idx: u64,
+        control_0_qubit_idx: usize,
+        control_1_qubit_idx: usize,
+        target_qubit_idx: usize,
         root_gate: SingleQubitGate,
     },
     NCGate {
