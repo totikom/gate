@@ -2,7 +2,7 @@
 #[cfg(feature = "indicatif")]
 use indicatif::{ProgressIterator, ProgressStyle};
 use num_complex::Complex32;
-use std::f32::consts::FRAC_PI_4;
+use std::f32::consts::{FRAC_PI_4, TAU};
 
 pub mod block;
 mod ops;
@@ -247,6 +247,69 @@ impl State {
         self.apply_toffoli_gate(controllers[0], controllers[1], ancillas[0], temp_state);
     }
 
+    pub fn apply_phase_estimation_algorithm<U>(
+        &mut self,
+        estimation_start_idx: usize,
+        estimation_end_idx: usize,
+        eigenstate_qubits: Vec<usize>,
+        additional_ancilla_idx: usize,
+        operator: U,
+        temp_state: &mut State,
+    ) where
+        U: Iterator<Item = Block<Vec<usize>>> + Clone + std::iter::ExactSizeIterator,
+    {
+        for (logical_idx, i) in (estimation_start_idx..=estimation_end_idx)
+            .into_iter()
+            .enumerate()
+        {
+            self.apply_single_qubit_gate(i, &H, temp_state);
+            let controlled_u = Self::convert_u(operator.clone(), i, additional_ancilla_idx);
+            for _ in 0..2_usize.pow(logical_idx as u32) {
+                self.evaluate_circuit(controlled_u.clone(), temp_state);
+            }
+        }
+
+        self.apply_inv_qft(estimation_start_idx, estimation_end_idx, temp_state);
+    }
+
+    pub fn apply_qft(&mut self, start_idx: usize, end_idx: usize, temp_state: &mut State) {
+        assert!(start_idx < end_idx);
+        for abs_idx in start_idx..end_idx {
+            self.apply_single_qubit_gate(abs_idx, &H, temp_state);
+            for j in 1..=(end_idx - abs_idx) {
+                let r = SingleQubitGate([
+                    [Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)],
+                    [
+                        Complex32::new(0.0, 0.0),
+                        Complex32::new((TAU / (j + 1) as f32).cos(), (TAU / (j + 1) as f32).sin()),
+                    ],
+                ]);
+                let r = controlled_u(&r);
+                self.apply_two_qubit_gate(abs_idx, abs_idx + j, &r, temp_state);
+            }
+        }
+        self.apply_single_qubit_gate(end_idx, &H, temp_state);
+    }
+
+    pub fn apply_inv_qft(&mut self, start_idx: usize, end_idx: usize, temp_state: &mut State) {
+        assert!(start_idx < end_idx);
+        self.apply_single_qubit_gate(end_idx, &H, temp_state);
+        for abs_idx in (start_idx..end_idx).into_iter().rev() {
+            for j in (1..=(end_idx - abs_idx)).into_iter().rev() {
+                let r = SingleQubitGate([
+                    [Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)],
+                    [
+                        Complex32::new(0.0, 0.0),
+                        Complex32::new((TAU / (j + 1) as f32).cos(), (TAU / (j + 1) as f32).sin()),
+                    ],
+                ]);
+                let r = controlled_u(&r);
+                self.apply_two_qubit_gate(abs_idx, abs_idx + j, &r, temp_state);
+            }
+            self.apply_single_qubit_gate(abs_idx, &H, temp_state);
+        }
+    }
+
     pub fn norm(&self) -> f32 {
         self.scalar_product(self).norm()
     }
@@ -353,6 +416,68 @@ impl State {
                 ancillas,
             } => self.grover_diffusion(diffusion_qubits.deref(), ancillas.deref(), temp_state),
         }
+    }
+
+    fn convert_u<I>(
+        u: I,
+        control_idx: usize,
+        additional_ancilla_idx: usize,
+    ) -> impl Iterator<Item = Block<Vec<usize>>> + std::iter::ExactSizeIterator + Clone
+    where
+        I: Iterator<Item = Block<Vec<usize>>> + std::iter::ExactSizeIterator + Clone,
+    {
+        u.map(move |b| match b {
+            Block::SingleQubitGate { gate, qubit_idx } => {
+                let controlled_u = controlled_u(&gate);
+                Block::TwoQubitGate {
+                    gate: controlled_u,
+                    control_qubit_idx: control_idx,
+                    target_qubit_idx: qubit_idx,
+                }
+            }
+            Block::TwoQubitGate { .. } => {
+                unimplemented!();
+            }
+            Block::ToffoliGate {
+                control_0_qubit_idx,
+                control_1_qubit_idx,
+                target_qubit_idx,
+            } => Block::NCGate {
+                controllers: vec![control_0_qubit_idx, control_1_qubit_idx, control_idx],
+                ancillas: vec![additional_ancilla_idx],
+                target: target_qubit_idx,
+                gate: X,
+            },
+            Block::CCGate {
+                control_0_qubit_idx,
+                control_1_qubit_idx,
+                target_qubit_idx,
+                root_gate,
+            } => Block::NCGate {
+                controllers: vec![control_0_qubit_idx, control_1_qubit_idx, control_idx],
+                ancillas: vec![additional_ancilla_idx],
+                target: target_qubit_idx,
+                gate: root_gate * root_gate,
+            },
+            Block::NCGate {
+                mut controllers,
+                mut ancillas,
+                target,
+                gate,
+            } => {
+                controllers.push(control_idx);
+                ancillas.push(additional_ancilla_idx);
+                Block::NCGate {
+                    controllers,
+                    ancillas,
+                    target: target,
+                    gate: gate,
+                }
+            }
+            Block::GroverDiffusion { .. } => {
+                unimplemented!();
+            }
+        })
     }
 }
 

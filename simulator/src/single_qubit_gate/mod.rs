@@ -31,6 +31,19 @@ impl SingleQubitGate {
         }
         Self(result)
     }
+
+    pub fn pow(self, pow: usize) -> SingleQubitGate {
+        let mut value = SingleQubitGate([
+            [Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)],
+            [Complex32::new(0.0, 0.0), Complex32::new(1.0, 0.0)],
+        ]);
+
+        for _ in 0..pow {
+            value = value * self;
+        }
+
+        value
+    }
 }
 
 #[cfg(test)]
