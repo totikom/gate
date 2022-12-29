@@ -77,6 +77,7 @@ impl State {
         gate: &TwoQubitGate,
         temp_state: &mut State,
     ) {
+        debug_assert_eq!(self.0.len(), temp_state.0.len());
         let result = &mut temp_state.0;
 
         let chunk_len = if result.len() <= num_cpus::get() {
@@ -279,15 +280,16 @@ impl State {
     }
 
     pub fn apply_qft(&mut self, start_idx: usize, end_idx: usize, temp_state: &mut State) {
-        assert!(start_idx < end_idx);
+        assert!(start_idx <= end_idx);
         for abs_idx in start_idx..end_idx {
             self.apply_single_qubit_gate(abs_idx, &H, temp_state);
             for j in 1..=(end_idx - abs_idx) {
+                let angle = TAU / 2.0_f32.powi(j as i32 + 1);
                 let r = SingleQubitGate([
                     [Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)],
                     [
                         Complex32::new(0.0, 0.0),
-                        Complex32::new((TAU / (j + 1) as f32).cos(), (TAU / (j + 1) as f32).sin()),
+                        Complex32::new(angle.cos(), angle.sin()),
                     ],
                 ]);
                 let r = controlled_u(&r);
@@ -296,28 +298,27 @@ impl State {
         }
         self.apply_single_qubit_gate(end_idx, &H, temp_state);
 
-        for i in start_idx..=((end_idx - start_idx) / 2) {
-            let temp = self.0[start_idx + i];
-            self.0[start_idx + i] = self.0[end_idx - i];
-            self.0[end_idx - i] = temp;
+        for i in start_idx..((end_idx - start_idx + 1) / 2) {
+            self.swap_qubits(start_idx + i, end_idx - i, temp_state);
         }
     }
 
     pub fn apply_inv_qft(&mut self, start_idx: usize, end_idx: usize, temp_state: &mut State) {
-        assert!(start_idx < end_idx);
-        for i in start_idx..=((end_idx - start_idx) / 2) {
-            let temp = self.0[start_idx + i];
-            self.0[start_idx + i] = self.0[end_idx - i];
-            self.0[end_idx - i] = temp;
+        assert!(start_idx <= end_idx);
+        for i in start_idx..((end_idx - start_idx + 1) / 2) {
+            self.swap_qubits(start_idx + i, end_idx - i, temp_state);
         }
+
         self.apply_single_qubit_gate(end_idx, &H, temp_state);
+
         for abs_idx in (start_idx..end_idx).into_iter().rev() {
             for j in (1..=(end_idx - abs_idx)).into_iter().rev() {
+                let angle = -TAU / 2.0_f32.powi(j as i32 + 1);
                 let r = SingleQubitGate([
                     [Complex32::new(1.0, 0.0), Complex32::new(0.0, 0.0)],
                     [
                         Complex32::new(0.0, 0.0),
-                        Complex32::new((TAU / (j + 1) as f32).cos(), (TAU / (j + 1) as f32).sin()),
+                        Complex32::new(angle.cos(), angle.sin()),
                     ],
                 ]);
                 let r = controlled_u(&r);
@@ -325,6 +326,12 @@ impl State {
             }
             self.apply_single_qubit_gate(abs_idx, &H, temp_state);
         }
+    }
+
+    pub fn swap_qubits(&mut self, first: usize, second: usize, temp_state: &mut State) {
+        self.apply_two_qubit_gate(first, second, &CNOT, temp_state);
+        self.apply_two_qubit_gate(second, first, &CNOT, temp_state);
+        self.apply_two_qubit_gate(first, second, &CNOT, temp_state);
     }
 
     pub fn norm(&self) -> f32 {
@@ -462,7 +469,7 @@ impl State {
                 target_qubit_idx,
             } => Block::NCGate {
                 controllers: vec![control_0_qubit_idx, control_1_qubit_idx, control_idx],
-                ancillas: vec![additional_ancilla_idx],
+                ancillas: vec![additional_ancilla_idx, additional_ancilla_idx2],
                 target: target_qubit_idx,
                 gate: X,
             },
@@ -497,7 +504,8 @@ impl State {
             }
         })
     }
-    pub fn kron(&self, state: State) -> Self {
+
+    pub fn kron(&self, state: &State) -> Self {
         let mut new_state = vec![Complex32::new(0.0, 0.0); self.0.len() * state.0.len()];
         for (self_idx, a) in self.0.iter().enumerate() {
             for (state_idx, b) in state.0.iter().enumerate() {

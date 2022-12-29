@@ -436,7 +436,6 @@ mod str {
 
 mod grover {
     use super::*;
-    use pretty_assertions::assert_eq;
 
     #[test]
     fn grover_naive() {
@@ -644,7 +643,6 @@ mod grover {
 
 mod qft {
     use super::*;
-    use pretty_assertions::assert_eq;
 
     #[test]
     fn two_qubit_in_out() {
@@ -657,35 +655,6 @@ mod qft {
 
             state.apply_qft(0, 1, &mut tmp);
             state.apply_inv_qft(0, 1, &mut tmp);
-            assert!(dbg!(state).distance(&dbg!(expected_state)) < 1e-4);
-        }
-    }
-
-    #[test]
-    fn two_qubit() {
-        let mut tmp = State::from_bit_str("00").unwrap();
-        for i in 0..4 {
-            let control_0 = i & 1;
-            let control_1 = (i & 2) >> 1;
-
-            println!("{}{}", control_1, control_0);
-
-            let mut state = State::from_bit_str(&format!("{}{}", control_1, control_0)).unwrap();
-
-            state.apply_qft(0, 1, &mut tmp);
-
-            let phase_0 = TAU * control_1 as f32 / 2.0;
-            let phase_1 = TAU * (control_0 as f32 / 2.0 + control_1 as f32 / 4.0);
-
-            let expected_state_0 = (State::from_bit_str("0").unwrap()
-                + State::from_bit_str("1").unwrap() * Complex32::new(phase_0.cos(), phase_0.sin()))
-                * FRAC_1_SQRT_2;
-
-            let expected_state_1 = (State::from_bit_str("0").unwrap()
-                + State::from_bit_str("1").unwrap() * Complex32::new(phase_1.cos(), phase_1.sin()))
-                * FRAC_1_SQRT_2;
-
-            let expected_state = expected_state_1.kron(expected_state_0);
             assert!(dbg!(state).distance(&dbg!(expected_state)) < 1e-4);
         }
     }
@@ -706,6 +675,144 @@ mod qft {
             assert!(dbg!(state).distance(&dbg!(expected_state)) < 1e-4);
         }
     }
+
+    #[test]
+    fn one_qubit() {
+        let mut tmp = State::from_bit_str("0").unwrap();
+        for i in 0..2 {
+            let digits = to_digits(i, 1);
+
+            let digits_str = to_digit_str(&digits);
+            println!("{}", &digits_str);
+
+            let mut state = State::from_bit_str(&digits_str).unwrap();
+
+            state.apply_qft(0, 0, &mut tmp);
+
+            let phases = to_phases(&digits);
+            dbg!(&phases);
+
+            let expected_states = to_states(&phases);
+
+            let expected_state = to_state(expected_states);
+
+            assert!(dbg!(state).distance(&dbg!(expected_state)) < 1e-4);
+        }
+    }
+
+    #[test]
+    fn two_qubit() {
+        let mut tmp = State::from_bit_str("00").unwrap();
+        for i in 1..4 {
+            let digits = to_digits(i, 2);
+
+            let digits_str = to_digit_str(&digits);
+            println!("{}", &digits_str);
+
+            let mut state = State::from_bit_str(&digits_str).unwrap();
+
+            state.apply_qft(0, 1, &mut tmp);
+
+            let phases = to_phases(&digits);
+            dbg!(&phases);
+
+            let expected_states = to_states(&phases);
+            dbg!(&expected_states);
+
+            let expected_state = to_state(expected_states);
+
+            assert!(dbg!(state).distance(&dbg!(expected_state)) < 1e-4);
+        }
+    }
+
+    #[test]
+    fn three_qubit() {
+        let mut tmp = State::from_bit_str("000").unwrap();
+        for i in 0..8 {
+            let digits = to_digits(i, 3);
+
+            let digits_str = to_digit_str(&digits);
+            println!("{}", &digits_str);
+
+            let mut state = State::from_bit_str(&digits_str).unwrap();
+
+            state.apply_qft(0, 2, &mut tmp);
+
+            let phases = to_phases(&digits);
+            dbg!(&phases);
+
+            let expected_states = to_states(&phases);
+            dbg!(&expected_states);
+
+            let expected_state = to_state(expected_states);
+
+            assert!(dbg!(state).distance(&dbg!(expected_state)) < 1e-4);
+        }
+    }
+
+    #[test]
+    fn four_qubit() {
+        let mut tmp = State::from_bit_str("0000").unwrap();
+        for i in 0..16 {
+            let digits = to_digits(i, 4);
+
+            let digits_str = to_digit_str(&digits);
+            println!("{}", &digits_str);
+
+            let mut state = State::from_bit_str(&digits_str).unwrap();
+
+            state.apply_qft(0, 3, &mut tmp);
+
+            let phases = to_phases(&digits);
+            dbg!(&phases);
+
+            let expected_states = to_states(&phases);
+
+            let expected_state = to_state(expected_states);
+
+            assert!(dbg!(state).distance(&dbg!(expected_state)) < 1e-4);
+        }
+    }
+
+    fn to_digits(num: usize, size: usize) -> Vec<u8> {
+        (0..size)
+            .into_iter()
+            .map(|i| ((num & (1 << i)) >> i) as u8)
+            .collect()
+    }
+
+    fn to_digit_str(digits: &Vec<u8>) -> String {
+        digits.iter().rev().map(|i| format!("{}", i)).collect()
+    }
+
+    fn to_phases(digits: &Vec<u8>) -> Vec<f32> {
+        let mut phase = 0.0;
+        let mut phases = Vec::new();
+        for &digit in digits.iter().rev() {
+            phase = (phase + digit as f32) * 0.5;
+            phases.push(phase);
+        }
+        phases
+    }
+
+    fn to_states(phases: &Vec<f32>) -> Vec<State> {
+        phases
+            .iter()
+            .map(|phase| {
+                let phase = TAU * phase;
+                (State::from_bit_str("0").unwrap()
+                    + State::from_bit_str("1").unwrap() * Complex32::new(phase.cos(), phase.sin()))
+                    * FRAC_1_SQRT_2
+            })
+            .collect()
+    }
+
+    fn to_state(states: Vec<State>) -> State {
+        states
+            .into_iter()
+            .reduce(|accum, state| state.kron(&accum))
+            .unwrap()
+    }
 }
 
 #[test]
@@ -713,75 +820,44 @@ fn kron() {
     let state1 = State::from_bit_str("0").unwrap();
     let state2 = State::from_bit_str("1").unwrap();
     let state_res = State::from_bit_str("01").unwrap();
-    assert_eq!(state1.kron(state2), state_res);
+    assert_eq!(state1.kron(&state2), state_res);
 
     let state1 = State::from_bit_str("1").unwrap();
     let state2 = State::from_bit_str("1").unwrap();
     let state_res = State::from_bit_str("11").unwrap();
-    assert_eq!(state1.kron(state2), state_res);
+    assert_eq!(state1.kron(&state2), state_res);
 
     let state1 = State::from_bit_str("1").unwrap();
     let state2 = State::from_bit_str("0").unwrap();
     let state_res = State::from_bit_str("10").unwrap();
-    assert_eq!(state1.kron(state2), state_res);
+    assert_eq!(state1.kron(&state2), state_res);
 
     let state1 = State::from_bit_str("000").unwrap();
     let state2 = State::from_bit_str("00").unwrap();
-    let state_res = State::from_bit_str("00000").unwrap();
+    let state_res = State::from_bit_str("000_00").unwrap();
     dbg!(state1.0.len());
     dbg!(state2.0.len());
-    let result = state1.kron(state2);
+    let result = state1.kron(&state2);
+    assert_eq!(result.0.len(), state_res.0.len());
+    assert_eq!(result, state_res);
+
+    let state1 = State::from_bit_str("100").unwrap();
+    let state2 = State::from_bit_str("01").unwrap();
+    let state_res = State::from_bit_str("100_01").unwrap();
+    dbg!(state1.0.len());
+    dbg!(state2.0.len());
+    let result = state1.kron(&state2);
     assert_eq!(result.0.len(), state_res.0.len());
     assert_eq!(result, state_res);
 }
 
-#[test]
-#[ignore]
-fn phase_estimation() {
-    for n_estimation in 1..=5 {
-        let estimation_zeroes = std::iter::repeat("0")
-            .take(n_estimation)
-            .collect::<String>();
-        let estimation_state = State::from_bit_str(&estimation_zeroes).unwrap();
-        let mut temp_state = State::from_bit_str(&format!("00_000_{}", estimation_zeroes)).unwrap();
-        //                                               estimation
-        //                                           eig
-        //                                         ancilla
+mod phase_estimation {
+    use super::*;
+    use pretty_assertions::assert_eq;
 
-        let circuit: Vec<Block<Vec<usize>>> = vec![
-            // 1 layer
-            Block::SingleQubitGate {
-                gate: H,
-                qubit_idx: n_estimation + 0,
-            },
-            Block::SingleQubitGate {
-                gate: H,
-                qubit_idx: n_estimation + 1,
-            },
-            Block::SingleQubitGate {
-                gate: H,
-                qubit_idx: n_estimation + 2,
-            },
-            // 2 layer
-            Block::SingleQubitGate {
-                gate: X,
-                qubit_idx: n_estimation + 0,
-            },
-            Block::SingleQubitGate {
-                gate: SX,
-                qubit_idx: n_estimation + 1,
-            },
-            Block::SingleQubitGate {
-                gate: T,
-                qubit_idx: n_estimation + 2,
-            },
-            // 3 layer
-            Block::ToffoliGate {
-                control_0_qubit_idx: n_estimation + 0,
-                control_1_qubit_idx: n_estimation + 1,
-                target_qubit_idx: n_estimation + 2,
-            },
-        ];
+    #[test]
+    fn three_qubit_op_1() {
+        let expected_phase = 0.5042053881557941;
 
         let eigen_vec = vec![
             Complex32::new(0.06327676, -0.11673236),
@@ -794,97 +870,86 @@ fn phase_estimation() {
             Complex32::new(-0.15695969, 0.03511926),
         ];
         let eig = State::new(eigen_vec);
-        //dbg!(&eig);
-        let ancilla = State::from_bit_str("00").unwrap();
 
-        let initial_state = eig.kron(estimation_state);
-        let mut initial_state = ancilla.kron(initial_state);
-        //dbg!(&initial_state);
+        for n_estimation in 1..8 {
+            let estimation_zeroes = std::iter::repeat("0")
+                .take(n_estimation)
+                .collect::<String>();
+            let estimation_state = State::from_bit_str(&estimation_zeroes).unwrap();
+            let mut temp_state =
+                State::from_bit_str(&format!("00_000_{}", estimation_zeroes)).unwrap();
+            //                                               estimation
+            //                                           eig
+            //                                         ancilla
 
-        initial_state.apply_phase_estimation_algorithm(
-            0,
-            n_estimation - 1,
-            n_estimation + 3,
-            n_estimation + 3 + 1,
-            circuit.into_iter(),
-            &mut temp_state,
-        );
-        //dbg!(&initial_state);
+            let circuit: Vec<Block<Vec<usize>>> = vec![
+                // 1 layer
+                Block::SingleQubitGate {
+                    gate: H,
+                    qubit_idx: n_estimation + 0,
+                },
+                Block::SingleQubitGate {
+                    gate: H,
+                    qubit_idx: n_estimation + 1,
+                },
+                Block::SingleQubitGate {
+                    gate: H,
+                    qubit_idx: n_estimation + 2,
+                },
+                // 2 layer
+                Block::SingleQubitGate {
+                    gate: X,
+                    qubit_idx: n_estimation + 0,
+                },
+                Block::SingleQubitGate {
+                    gate: SX,
+                    qubit_idx: n_estimation + 1,
+                },
+                Block::SingleQubitGate {
+                    gate: T,
+                    qubit_idx: n_estimation + 2,
+                },
+                // 3 layer
+                Block::ToffoliGate {
+                    control_0_qubit_idx: n_estimation + 0,
+                    control_1_qubit_idx: n_estimation + 1,
+                    target_qubit_idx: n_estimation + 2,
+                },
+            ];
 
-        let probs = initial_state.prob_reduce(n_estimation);
-        //dbg!(&probs);
+            //dbg!(&eig);
+            let ancilla = State::from_bit_str("00").unwrap();
 
-        let value = probs
-            .iter()
-            .enumerate()
-            .max_by(|(_, a), (_, b)| a.total_cmp(b))
-            .map(|(index, _)| index)
-            .unwrap();
+            let initial_state = eig.kron(&estimation_state);
+            let mut initial_state = ancilla.kron(&initial_state);
+            //dbg!(&initial_state);
 
-        let phase = value as f32 / 2.0.powi(n_estimation as i32);
-        let expected_phase = 0.5042053881557941;
-        dbg!(phase);
-        dbg!(expected_phase);
+            initial_state.apply_phase_estimation_algorithm(
+                0,
+                n_estimation - 1,
+                n_estimation + 3,
+                n_estimation + 3 + 1,
+                circuit.into_iter(),
+                &mut temp_state,
+            );
+            //dbg!(&initial_state);
+
+            let probs = initial_state.prob_reduce(n_estimation);
+            //dbg!(&probs);
+
+            let value = probs
+                .iter()
+                .enumerate()
+                .max_by(|(_, a), (_, b)| a.total_cmp(b))
+                .map(|(index, _)| index)
+                .unwrap();
+
+            let phase = value as f32 / 2.0.powi(n_estimation as i32);
+            let delta = (phase - expected_phase).abs();
+
+            dbg!(phase);
+            dbg!(expected_phase);
+            assert!(delta < 2.0.powi(-(n_estimation as i32 + 1)));
+        }
     }
-    todo!();
-}
-#[test]
-#[ignore]
-fn phase_estimation_trivial() {
-    for n_estimation in 1..=5 {
-        let estimation_zeroes = std::iter::repeat("0")
-            .take(n_estimation)
-            .collect::<String>();
-        let estimation_state = State::from_bit_str(&estimation_zeroes).unwrap();
-        let mut temp_state = State::from_bit_str(&format!("00_0_{}", estimation_zeroes)).unwrap();
-        //                                               estimation
-        //                                           eig
-        //                                         ancilla
-
-        let circuit: Vec<Block<Vec<usize>>> = vec![
-            // 1 layer
-            Block::SingleQubitGate {
-                gate: H,
-                qubit_idx: n_estimation + 0,
-            },
-        ];
-
-        let eigen_vec = vec![
-            Complex32::new(-0.38268343, 0.),
-            Complex32::new(0.92387953, 0.),
-        ];
-        let eig = State::new(eigen_vec);
-        //dbg!(&eig);
-        let ancilla = State::from_bit_str("00").unwrap();
-
-        let initial_state = eig.kron(estimation_state);
-        let mut initial_state = ancilla.kron(initial_state);
-        //dbg!(&initial_state);
-
-        initial_state.apply_phase_estimation_algorithm(
-            0,
-            n_estimation - 1,
-            n_estimation + 3,
-            n_estimation + 3 + 1,
-            circuit.into_iter(),
-            &mut temp_state,
-        );
-        //dbg!(&initial_state);
-
-        let probs = initial_state.prob_reduce(n_estimation);
-        //dbg!(&probs);
-
-        let value = probs
-            .iter()
-            .enumerate()
-            .max_by(|(_, a), (_, b)| a.total_cmp(b))
-            .map(|(index, _)| index)
-            .unwrap();
-
-        let phase = value as f32 / 2.0.powi(n_estimation as i32);
-        let expected_phase = 0.5;
-        dbg!(phase);
-        dbg!(expected_phase);
-    }
-    todo!();
 }
