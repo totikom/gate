@@ -1,5 +1,6 @@
 use super::State;
 use std::{fmt, ops};
+use num_complex::Complex32;
 
 impl ops::Add for State {
     type Output = Self;
@@ -20,6 +21,16 @@ impl ops::Mul<f32> for State {
     type Output = Self;
 
     fn mul(self, rhs: f32) -> Self {
+        let result: Vec<_> = self.0.into_iter().map(|x| x * rhs).collect();
+
+        Self(result)
+    }
+}
+
+impl ops::Mul<Complex32> for State {
+    type Output = Self;
+
+    fn mul(self, rhs: Complex32) -> Self {
         let result: Vec<_> = self.0.into_iter().map(|x| x * rhs).collect();
 
         Self(result)
