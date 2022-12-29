@@ -1,4 +1,3 @@
-#![feature(int_log)]
 #[cfg(feature = "indicatif")]
 use indicatif::{ProgressIterator, ProgressStyle};
 use num_complex::Complex32;
@@ -26,8 +25,9 @@ impl State {
     }
 
     pub fn from_bit_str(state_str: &str) -> Result<Self, std::num::ParseIntError> {
+        let state_str = state_str.replace(&[' ', '_'], "");
         let mut state = vec![Complex32::new(0.0, 0.0); 2_usize.pow(state_str.len() as u32)];
-        let index = usize::from_str_radix(&state_str.replace(&[' ', '_'], ""), 2)?;
+        let index = usize::from_str_radix(&state_str, 2)?;
 
         state[index] = Complex32::new(1.0, 0.0);
         Ok(Self(state))
@@ -39,6 +39,7 @@ impl State {
         gate: &SingleQubitGate,
         temp_state: &mut State,
     ) {
+        debug_assert_eq!(self.0.len(), temp_state.0.len());
         let result = &mut temp_state.0;
         let chunk_len = if result.len() <= num_cpus::get() {
             result.len()
@@ -251,8 +252,8 @@ impl State {
         &mut self,
         estimation_start_idx: usize,
         estimation_end_idx: usize,
-        eigenstate_qubits: Vec<usize>,
         additional_ancilla_idx: usize,
+        additional_ancilla_idx2: usize,
         operator: U,
         temp_state: &mut State,
     ) where
@@ -263,7 +264,12 @@ impl State {
             .enumerate()
         {
             self.apply_single_qubit_gate(i, &H, temp_state);
-            let controlled_u = Self::convert_u(operator.clone(), i, additional_ancilla_idx);
+            let controlled_u = Self::convert_u(
+                operator.clone(),
+                i,
+                additional_ancilla_idx,
+                additional_ancilla_idx2,
+            );
             for _ in 0..2_usize.pow(logical_idx as u32) {
                 self.evaluate_circuit(controlled_u.clone(), temp_state);
             }
@@ -289,10 +295,21 @@ impl State {
             }
         }
         self.apply_single_qubit_gate(end_idx, &H, temp_state);
+
+        for i in start_idx..=((end_idx - start_idx) / 2) {
+            let temp = self.0[start_idx + i];
+            self.0[start_idx + i] = self.0[end_idx - i];
+            self.0[end_idx - i] = temp;
+        }
     }
 
     pub fn apply_inv_qft(&mut self, start_idx: usize, end_idx: usize, temp_state: &mut State) {
         assert!(start_idx < end_idx);
+        for i in start_idx..=((end_idx - start_idx) / 2) {
+            let temp = self.0[start_idx + i];
+            self.0[start_idx + i] = self.0[end_idx - i];
+            self.0[end_idx - i] = temp;
+        }
         self.apply_single_qubit_gate(end_idx, &H, temp_state);
         for abs_idx in (start_idx..end_idx).into_iter().rev() {
             for j in (1..=(end_idx - abs_idx)).into_iter().rev() {
@@ -422,6 +439,7 @@ impl State {
         u: I,
         control_idx: usize,
         additional_ancilla_idx: usize,
+        additional_ancilla_idx2: usize,
     ) -> impl Iterator<Item = Block<Vec<usize>>> + std::iter::ExactSizeIterator + Clone
     where
         I: Iterator<Item = Block<Vec<usize>>> + std::iter::ExactSizeIterator + Clone,
@@ -478,6 +496,23 @@ impl State {
                 unimplemented!();
             }
         })
+    }
+    pub fn kron(&self, state: State) -> Self {
+        let mut new_state = vec![Complex32::new(0.0, 0.0); self.0.len() * state.0.len()];
+        for (self_idx, a) in self.0.iter().enumerate() {
+            for (state_idx, b) in state.0.iter().enumerate() {
+                new_state[self_idx * state.0.len() + state_idx] = a * b;
+            }
+        }
+        Self(new_state)
+    }
+
+    pub fn prob_reduce(&self, n_qubits: usize) -> Vec<f32> {
+        let mut probs = vec![0.0; 2_usize.pow(n_qubits as u32)];
+        for (idx, val) in self.0.iter().enumerate() {
+            probs[idx % 2_usize.pow(n_qubits as u32)] += val.norm() * val.norm();
+        }
+        probs
     }
 }
 
@@ -889,6 +924,24 @@ mod tests {
         }
 
         #[test]
+        fn state_00_1() {
+            let result = State::from_bit_str("00_1").unwrap();
+
+            let expected_state = State(vec![
+                Complex32::new(0.0, 0.0),
+                Complex32::new(1.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+                Complex32::new(0.0, 0.0),
+            ]);
+
+            assert_eq!(result, expected_state);
+        }
+
+        #[test]
         fn state_10() {
             let result = State::from_bit_str("10").unwrap();
 
@@ -1015,12 +1068,12 @@ mod tests {
 
     #[test]
     fn grover_2_answers_6q() {
-        let expected_state_0 = State::from_bit_str("000_1_1111_0").unwrap();
-        let expected_state_1 = State::from_bit_str("000_1_1111_1").unwrap();
+        let expected_state_0 = State::from_bit_str("000000_1_1111_0").unwrap();
+        let expected_state_1 = State::from_bit_str("000000_1_1111_1").unwrap();
         let expected_state = (expected_state_1 + expected_state_0) * FRAC_1_SQRT_2;
 
-        let mut state = State::from_bit_str("000_0_0000_0").unwrap();
-        let mut temp_state = State::from_bit_str("000_0_0000_0").unwrap();
+        let mut state = State::from_bit_str("000000_0_0000_0").unwrap();
+        let mut temp_state = State::from_bit_str("000000_0_0000_0").unwrap();
 
         let oracle = vec![Block::NCGate {
             controllers: vec![1, 2, 3, 4],
@@ -1104,5 +1157,32 @@ mod tests {
     fn expected_probability(n_variants: f32, m_answers: f32, k_iterations: f32) -> f32 {
         let theta = (2.0 * (m_answers * (n_variants - m_answers)).sqrt() / n_variants).asin();
         ((2.0 * k_iterations + 1.0) / 2.0 * theta).sin().powi(2)
+    }
+
+    #[test]
+    fn kron() {
+        let state1 = State::from_bit_str("0").unwrap();
+        let state2 = State::from_bit_str("1").unwrap();
+        let state_res = State::from_bit_str("01").unwrap();
+        assert_eq!(state1.kron(state2), state_res);
+
+        let state1 = State::from_bit_str("1").unwrap();
+        let state2 = State::from_bit_str("1").unwrap();
+        let state_res = State::from_bit_str("11").unwrap();
+        assert_eq!(state1.kron(state2), state_res);
+
+        let state1 = State::from_bit_str("1").unwrap();
+        let state2 = State::from_bit_str("0").unwrap();
+        let state_res = State::from_bit_str("10").unwrap();
+        assert_eq!(state1.kron(state2), state_res);
+
+        let state1 = State::from_bit_str("000").unwrap();
+        let state2 = State::from_bit_str("00").unwrap();
+        let state_res = State::from_bit_str("00000").unwrap();
+        dbg!(state1.0.len());
+        dbg!(state2.0.len());
+        let result = state1.kron(state2);
+        assert_eq!(result.0.len(), state_res.0.len());
+        assert_eq!(result, state_res);
     }
 }
