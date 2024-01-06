@@ -40,6 +40,7 @@ impl State {
         temp_state: &mut State,
     ) {
         debug_assert_eq!(self.0.len(), temp_state.0.len());
+
         let result = &mut temp_state.0;
         let chunk_len = if result.len() <= num_cpus::get() {
             result.len()
@@ -158,8 +159,8 @@ impl State {
         oracle: O,
         temp_state: &mut State,
     ) where
-        T: std::ops::Deref<Target = [usize]>,
-        O: Iterator<Item = Block<T>> + Clone,
+        T: std::ops::Deref<Target = [usize]> + std::fmt::Debug,
+        O: Iterator<Item = Block<T>> + Clone + std::fmt::Debug,
     {
         let N = 2_u32.pow(search_qubits.len() as u32);
         let n = (FRAC_PI_4 * (N as f32 / M as f32).sqrt()).floor() as usize;
@@ -260,20 +261,29 @@ impl State {
     ) where
         U: Iterator<Item = Block<Vec<usize>>> + Clone + std::iter::ExactSizeIterator,
     {
+        dbg!(&self);
+        for i in estimation_start_idx..=estimation_end_idx {
+            //println!("i: {}, H", i);
+            self.apply_single_qubit_gate(i, &H, temp_state);
+        }
+
+            dbg!(&self);
         for (logical_idx, i) in (estimation_start_idx..=estimation_end_idx)
             .into_iter()
             .enumerate()
         {
-            self.apply_single_qubit_gate(i, &H, temp_state);
             let controlled_u = Self::convert_u(
                 operator.clone(),
                 i,
                 additional_ancilla_idx,
                 additional_ancilla_idx2,
             );
-            for _ in 0..2_usize.pow(logical_idx as u32) {
+            //dbg!(&self);
+            for pass in 0..2_usize.pow(logical_idx as u32) {
+                println!("logical_idx: {}, pass:{}", logical_idx, pass);
                 self.evaluate_circuit(controlled_u.clone(), temp_state);
             }
+            dbg!(&self);
         }
 
         self.apply_inv_qft(estimation_start_idx, estimation_end_idx, temp_state);
@@ -305,6 +315,7 @@ impl State {
 
     pub fn apply_inv_qft(&mut self, start_idx: usize, end_idx: usize, temp_state: &mut State) {
         assert!(start_idx <= end_idx);
+
         for i in start_idx..((end_idx - start_idx + 1) / 2) {
             self.swap_qubits(start_idx + i, end_idx - i, temp_state);
         }
@@ -359,9 +370,10 @@ impl State {
     pub fn evaluate_circuit<I, T>(&mut self, circuit: I, temp_state: &mut State)
     where
         I: Iterator<Item = Block<T>>,
-        T: std::ops::Deref<Target = [usize]>,
+        T: std::ops::Deref<Target = [usize]> + std::fmt::Debug,
     {
         for gate in circuit {
+            //dbg!(&gate);
             self.evaluate_gate(&gate, temp_state);
         }
     }
